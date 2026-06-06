@@ -102,4 +102,19 @@ export const api = {
     upsert: (sc: string, item: any) => apiFetch('/api/general/finance', { method: 'POST', body: JSON.stringify(item) }, sc),
     delete: (sc: string, id: string) => apiFetch(`/api/general/finance?id=${id}`, { method: 'DELETE' }, sc),
   },
+  fitness: {
+    list: (sc: string) => apiFetch('/api/general/fitness', {}, sc),
+    upsert: (sc: string, item: any) => apiFetch('/api/general/fitness', { method: 'POST', body: JSON.stringify(item) }, sc),
+    delete: (sc: string, id: string) => apiFetch(`/api/general/fitness?id=${id}`, { method: 'DELETE' }, sc),
+  },
+  inbox: {
+    list: (sc: string) => apiFetch('/api/self-growth/inbox', {}, sc),
+    upsert: (sc: string, item: any) => apiFetch('/api/self-growth/inbox', { method: 'POST', body: JSON.stringify(item) }, sc),
+    delete: (sc: string, id: string) => apiFetch(`/api/self-growth/inbox?id=${id}`, { method: 'DELETE' }, sc),
+  },
+  parentingResources: {
+    list: (sc: string) => apiFetch('/api/parenting/resources', {}, sc),
+    upsert: (sc: string, item: any) => apiFetch('/api/parenting/resources', { method: 'POST', body: JSON.stringify(item) }, sc),
+    delete: (sc: string, id: string) => apiFetch(`/api/parenting/resources?id=${id}`, { method: 'DELETE' }, sc),
+  },
 };

@@ -15,9 +15,12 @@ import {
   Heart,
   PlusCircle,
   FileText,
-  ClipboardList
+  ClipboardList,
+  Library,
+  Star,
+  ExternalLink
 } from 'lucide-react';
-import { ChildMilestone, ChildDiary, ChildDailyLog } from '../types';
+import { ChildMilestone, ChildDiary, ChildDailyLog, ParentingResource } from '../types';
 
 interface ParentingProps {
   milestones: ChildMilestone[];
@@ -29,16 +32,31 @@ interface ParentingProps {
   childLogs: ChildDailyLog[];
   onAddChildLog: (l: Omit<ChildDailyLog, 'id'>) => void;
   onDeleteChildLog: (id: string) => void;
+  resources: ParentingResource[];
+  onAddResource: (r: Omit<ParentingResource, 'id'>) => void;
+  onDeleteResource: (id: string) => void;
 }
 
 const moodPresets = [
-  '🥰 乖巧可爱',
-  '😴 安静熟睡',
-  '🥳 活泼好动',
-  '🦖 调皮捣蛋',
-  '🍼 胃口大开',
+  '😊 开心配合',
+  '😴 疲惫安静',
+  '🏃 活力十足',
+  '🤔 好奇探索',
+  '😤 情绪波动',
   '🤒 身体不适'
 ];
+
+const RESOURCE_TYPES = [
+  { value: 'app', label: 'App', color: 'bg-blue-100 text-blue-800 border-blue-200' },
+  { value: 'book', label: '书籍', color: 'bg-amber-100 text-amber-800 border-amber-200' },
+  { value: 'course', label: '课程', color: 'bg-purple-100 text-purple-800 border-purple-200' },
+  { value: 'website', label: '网站', color: 'bg-teal-100 text-teal-800 border-teal-200' },
+  { value: 'tool', label: '工具', color: 'bg-emerald-100 text-emerald-800 border-emerald-200' },
+];
+
+function getResourceTypeStyle(type: string) {
+  return RESOURCE_TYPES.find(t => t.value === type)?.color ?? 'bg-gray-100 text-gray-700 border-gray-200';
+}
 
 export default function ParentingSection({
   milestones,
@@ -50,9 +68,12 @@ export default function ParentingSection({
   childLogs = [],
   onAddChildLog,
   onDeleteChildLog,
+  resources = [],
+  onAddResource,
+  onDeleteResource,
 }: ParentingProps) {
 
-  const [subTab, setSubTab] = useState<'milestones' | 'diaries' | 'logs'>('milestones');
+  const [subTab, setSubTab] = useState<'milestones' | 'diaries' | 'logs' | 'resources'>('milestones');
 
   // Milestone input states
   const [mTitle, setMTitle] = useState('');
@@ -72,6 +93,22 @@ export default function ParentingSection({
   const [lType, setLType] = useState<ChildDailyLog['type']>('notes');
   const [lSpec, setLSpec] = useState('');
   const [lNotes, setLNotes] = useState('');
+
+  // Resource input states
+  const [rName, setRName] = useState('');
+  const [rType, setRType] = useState<ParentingResource['type']>('app');
+  const [rSubject, setRSubject] = useState('');
+  const [rAgeRange, setRAgeRange] = useState('7-10岁');
+  const [rRating, setRRating] = useState(0);
+  const [rNotes, setRNotes] = useState('');
+  const [rUrl, setRUrl] = useState('');
+
+  const submitResource = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!rName.trim()) return;
+    onAddResource({ name: rName.trim(), type: rType, subject: rSubject.trim() || undefined, ageRange: rAgeRange.trim() || undefined, rating: rRating, notes: rNotes.trim() || undefined, url: rUrl.trim() || undefined });
+    setRName(''); setRSubject(''); setRNotes(''); setRUrl(''); setRRating(0);
+  };
 
   const submitLog = (e: React.FormEvent) => {
     e.preventDefault();
@@ -128,7 +165,7 @@ export default function ParentingSection({
             }`}
           >
             <Sparkles size={13} />
-            <span>成长里程碑 (Milestones)</span>
+            <span>成长里程碑</span>
           </button>
           <button
             type="button"
@@ -140,7 +177,7 @@ export default function ParentingSection({
             }`}
           >
             <BookOpen size={13} />
-            <span>育儿成长日记 (Baby Diary)</span>
+            <span>亲子日记</span>
           </button>
           <button
             type="button"
@@ -152,7 +189,19 @@ export default function ParentingSection({
             }`}
           >
             <ClipboardList size={13} />
-            <span>每日记录 (Daily Log)</span>
+            <span>日常记录</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setSubTab('resources')}
+            className={`px-4 py-2 text-xs font-bold rounded-t-lg transition-all border-t-2 border-x flex items-center gap-1.5 cursor-pointer ${
+              subTab === 'resources'
+                ? 'bg-white border-techo-pink text-techo-pink font-extrabold shadow-xxs pb-2.5 z-10'
+                : 'bg-gray-100/70 border-transparent text-gray-500 hover:bg-gray-100 hover:text-gray-700'
+            }`}
+          >
+            <Library size={13} />
+            <span>学习资源库</span>
           </button>
         </div>
         <div className="text-[10px] text-gray-400 font-mono hidden sm:block">KOKUYO TECHO PARENTING</div>
@@ -431,6 +480,121 @@ export default function ParentingSection({
             </div>
           )}
 
+          {subTab === 'resources' && (
+            <div className="animate-fade-in flex flex-col h-full flex-1">
+              <div className="flex items-center justify-between border-b-2 border-[#eae6d8] pb-3 mb-6 select-none">
+                <h3 className="font-display font-bold text-[#48453f] text-sm flex items-center gap-2">
+                  <Library size={18} className="text-techo-pink" />
+                  学习资源库 (Learning Resources)
+                </h3>
+                <span className="text-[10px] text-techo-pink font-bold font-mono">RESOURCE LIBRARY</span>
+              </div>
+
+              <form onSubmit={submitResource} className="bg-pink-50/20 border border-pink-100 p-4 rounded-md mb-6 space-y-3">
+                <h4 className="text-xs font-bold text-techo-pink flex items-center gap-1">
+                  <PlusCircle size={13} /> 添加学习资源
+                </h4>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
+                  <div className="sm:col-span-2">
+                    <label className="block text-[10px] font-bold text-gray-500 mb-1">资源名称 *</label>
+                    <input type="text" value={rName} onChange={e => setRName(e.target.value)}
+                      placeholder="如：可汗学院 Khan Academy"
+                      className="w-full bg-white border border-[#c2bdae] p-2 rounded text-xs focus:outline-none focus:ring-1 focus:ring-pink-400" required />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-gray-500 mb-1">类型</label>
+                    <select value={rType} onChange={e => setRType(e.target.value as ParentingResource['type'])}
+                      className="w-full bg-white border border-[#c2bdae] p-2 rounded text-xs focus:outline-none focus:ring-1 focus:ring-pink-400">
+                      {RESOURCE_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-gray-500 mb-1">科目/领域</label>
+                    <input type="text" value={rSubject} onChange={e => setRSubject(e.target.value)}
+                      placeholder="如：数学、英语、编程"
+                      className="w-full bg-white border border-[#c2bdae] p-2 rounded text-xs focus:outline-none focus:ring-1 focus:ring-pink-400" />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-gray-500 mb-1">适用年龄</label>
+                    <input type="text" value={rAgeRange} onChange={e => setRAgeRange(e.target.value)}
+                      placeholder="如：7-10岁"
+                      className="w-full bg-white border border-[#c2bdae] p-2 rounded text-xs focus:outline-none focus:ring-1 focus:ring-pink-400" />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-gray-500 mb-1">评分</label>
+                    <div className="flex gap-1 pt-1">
+                      {[1,2,3,4,5].map(s => (
+                        <button type="button" key={s} onClick={() => setRRating(s)}
+                          className={`text-base cursor-pointer transition-opacity ${s <= rRating ? 'opacity-100' : 'opacity-25'}`}>
+                          <Star size={14} className={s <= rRating ? 'fill-amber-400 text-amber-400' : 'text-gray-300'} />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label className="block text-[10px] font-bold text-gray-500 mb-1">链接（可选）</label>
+                    <input type="text" value={rUrl} onChange={e => setRUrl(e.target.value)}
+                      placeholder="https://..."
+                      className="w-full bg-white border border-[#c2bdae] p-2 rounded text-xs focus:outline-none focus:ring-1 focus:ring-pink-400" />
+                  </div>
+                  <div className="sm:col-span-3">
+                    <label className="block text-[10px] font-bold text-gray-500 mb-1">备注（可选）</label>
+                    <input type="text" value={rNotes} onChange={e => setRNotes(e.target.value)}
+                      placeholder="使用感受、推荐理由..."
+                      className="w-full bg-white border border-[#c2bdae] p-2 rounded text-xs focus:outline-none focus:ring-1 focus:ring-pink-400" />
+                  </div>
+                </div>
+                <button type="submit"
+                  className="w-full py-2 bg-techo-pink hover:bg-[#bd6372] text-white text-xs font-bold rounded cursor-pointer transition-colors">
+                  + 添加到资源库
+                </button>
+              </form>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 overflow-y-auto max-h-[350px] pr-1 flex-1">
+                {resources.length === 0 ? (
+                  <div className="sm:col-span-2 text-center py-12">
+                    <Library size={24} className="mx-auto mb-2 text-gray-300" />
+                    <p className="italic text-gray-400 text-xs">还没有添加学习资源</p>
+                  </div>
+                ) : resources.map(r => (
+                  <div key={r.id} className="bg-white border border-[#e8e4da] rounded-md p-3 group hover:border-pink-200 transition-colors relative">
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-xs font-bold text-[#3a3528]">{r.name}</span>
+                        <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border ${getResourceTypeStyle(r.type)}`}>
+                          {RESOURCE_TYPES.find(t => t.value === r.type)?.label}
+                        </span>
+                      </div>
+                      <button onClick={() => onDeleteResource(r.id)}
+                        className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 cursor-pointer p-0.5 transition-all shrink-0">
+                        <Trash2 size={11} />
+                      </button>
+                    </div>
+                    <div className="flex flex-wrap gap-2 mb-1.5">
+                      {r.subject && <span className="text-[10px] text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">{r.subject}</span>}
+                      {r.ageRange && <span className="text-[10px] text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">{r.ageRange}</span>}
+                      {r.rating > 0 && (
+                        <span className="flex items-center gap-0.5">
+                          {[1,2,3,4,5].map(s => (
+                            <Star key={s} size={10} className={s <= r.rating ? 'fill-amber-400 text-amber-400' : 'text-gray-200'} />
+                          ))}
+                        </span>
+                      )}
+                    </div>
+                    {r.notes && <p className="text-[11px] text-gray-500 leading-snug mb-1">{r.notes}</p>}
+                    {r.url && (
+                      <a href={r.url} target="_blank" rel="noopener noreferrer"
+                        className="text-[10px] text-techo-teal hover:underline flex items-center gap-0.5 truncate">
+                        <ExternalLink size={9} />
+                        {r.url.replace(/^https?:\/\//, '').slice(0, 40)}
+                      </a>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {subTab === 'logs' && (
             <div className="animate-fade-in flex flex-col h-full flex-1">
               <div className="flex items-center justify-between border-b-2 border-[#eae6d8] pb-3 mb-6 select-none">
@@ -455,9 +619,9 @@ export default function ParentingSection({
                     <label className="block text-[10px] font-bold text-gray-500 mb-1">类型</label>
                     <select value={lType} onChange={e => setLType(e.target.value as ChildDailyLog['type'])}
                       className="w-full bg-white border border-[#c2bdae] p-2 rounded text-xs focus:outline-none focus:ring-1 focus:ring-pink-400">
-                      <option value="feeding">🍼 喂奶/喂食</option>
+                    <option value="feeding">🍱 饮食</option>
                       <option value="sleep">😴 睡眠</option>
-                      <option value="activity">🎈 玩耍活动</option>
+                      <option value="activity">📚 学习/活动</option>
                       <option value="notes">📝 备注</option>
                     </select>
                   </div>
@@ -492,9 +656,9 @@ export default function ParentingSection({
                       <span className="font-mono text-[11px] text-[#8a816c] shrink-0 pt-0.5">{log.time}</span>
                       <div className="flex-1 min-w-0">
                         <span className="text-[10px] font-bold text-techo-pink mr-2">{
-                          log.type === 'feeding' ? '🍼 喂奶' :
+                          log.type === 'feeding' ? '🍱 饮食' :
                           log.type === 'sleep' ? '😴 睡眠' :
-                          log.type === 'activity' ? '🎈 玩耍' : '📝 备注'
+                          log.type === 'activity' ? '📚 学习/活动' : '📝 备注'
                         }</span>
                         {log.spec && <span className="text-[10px] text-gray-400 mr-2">[{log.spec}]</span>}
                         <span className="text-xs text-[#524c3e]">{log.notes}</span>

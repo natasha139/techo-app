@@ -32,25 +32,37 @@ function generateSyncCode() {
 
 async function initSchemas(env) {
   const sg = env.SELF_GROWTH_DB;
-  await sg.exec(`CREATE TABLE IF NOT EXISTS users (sync_code TEXT PRIMARY KEY, username TEXT NOT NULL DEFAULT 'Natasha', created_at TEXT NOT NULL)`);
-  await sg.exec(`CREATE TABLE IF NOT EXISTS wishes (id TEXT PRIMARY KEY, sync_code TEXT NOT NULL, ord INTEGER NOT NULL DEFAULT 0, content TEXT NOT NULL DEFAULT '', is_completed INTEGER NOT NULL DEFAULT 0, category TEXT NOT NULL DEFAULT '', updated_at TEXT NOT NULL)`);
-  await sg.exec(`CREATE TABLE IF NOT EXISTS skills (id TEXT PRIMARY KEY, sync_code TEXT NOT NULL, skill_name TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'not_started', category TEXT NOT NULL DEFAULT '', updated_at TEXT NOT NULL)`);
-  await sg.exec(`CREATE TABLE IF NOT EXISTS skill_subgoals (id TEXT PRIMARY KEY, skill_id TEXT NOT NULL, sync_code TEXT NOT NULL, name TEXT NOT NULL, is_done INTEGER NOT NULL DEFAULT 0, updated_at TEXT NOT NULL)`);
-  await sg.exec(`CREATE TABLE IF NOT EXISTS work_targets (id TEXT PRIMARY KEY, sync_code TEXT NOT NULL, quarter_goal TEXT NOT NULL DEFAULT '', key_results TEXT NOT NULL DEFAULT '', projects TEXT NOT NULL DEFAULT '', deadline TEXT NOT NULL DEFAULT '', progress INTEGER NOT NULL DEFAULT 0, updated_at TEXT NOT NULL)`);
-  await sg.exec(`CREATE TABLE IF NOT EXISTS hobbies (id TEXT PRIMARY KEY, sync_code TEXT NOT NULL, title TEXT NOT NULL, type TEXT NOT NULL DEFAULT 'book', creator TEXT NOT NULL DEFAULT '', last_date TEXT NOT NULL DEFAULT '', description TEXT NOT NULL DEFAULT '', rating INTEGER NOT NULL DEFAULT 0, cover_url TEXT, updated_at TEXT NOT NULL)`);
-  await sg.exec(`CREATE TABLE IF NOT EXISTS side_hustles (id TEXT PRIMARY KEY, sync_code TEXT NOT NULL, platform TEXT NOT NULL DEFAULT '', topic TEXT NOT NULL DEFAULT '', format TEXT NOT NULL DEFAULT 'other', publish_date TEXT NOT NULL DEFAULT '', status TEXT NOT NULL DEFAULT 'concept', updated_at TEXT NOT NULL)`);
-  await sg.exec(`CREATE TABLE IF NOT EXISTS diary_notes (id TEXT PRIMARY KEY, sync_code TEXT NOT NULL, title TEXT NOT NULL DEFAULT '', date TEXT NOT NULL DEFAULT '', weather TEXT, mood TEXT, category TEXT NOT NULL DEFAULT '', content TEXT NOT NULL DEFAULT '', tags TEXT NOT NULL DEFAULT '[]', updated_at TEXT NOT NULL)`);
+  const sgTables = [
+    `CREATE TABLE IF NOT EXISTS users (sync_code TEXT PRIMARY KEY, username TEXT NOT NULL DEFAULT 'Natasha', created_at TEXT NOT NULL)`,
+    `CREATE TABLE IF NOT EXISTS wishes (id TEXT PRIMARY KEY, sync_code TEXT NOT NULL, ord INTEGER NOT NULL DEFAULT 0, content TEXT NOT NULL DEFAULT '', is_completed INTEGER NOT NULL DEFAULT 0, category TEXT NOT NULL DEFAULT '', updated_at TEXT NOT NULL)`,
+    `CREATE TABLE IF NOT EXISTS skills (id TEXT PRIMARY KEY, sync_code TEXT NOT NULL, skill_name TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'not_started', category TEXT NOT NULL DEFAULT '', updated_at TEXT NOT NULL)`,
+    `CREATE TABLE IF NOT EXISTS skill_subgoals (id TEXT PRIMARY KEY, skill_id TEXT NOT NULL, sync_code TEXT NOT NULL, name TEXT NOT NULL, is_done INTEGER NOT NULL DEFAULT 0, updated_at TEXT NOT NULL)`,
+    `CREATE TABLE IF NOT EXISTS work_targets (id TEXT PRIMARY KEY, sync_code TEXT NOT NULL, quarter_goal TEXT NOT NULL DEFAULT '', key_results TEXT NOT NULL DEFAULT '', projects TEXT NOT NULL DEFAULT '', deadline TEXT NOT NULL DEFAULT '', progress INTEGER NOT NULL DEFAULT 0, updated_at TEXT NOT NULL)`,
+    `CREATE TABLE IF NOT EXISTS hobbies (id TEXT PRIMARY KEY, sync_code TEXT NOT NULL, title TEXT NOT NULL, type TEXT NOT NULL DEFAULT 'book', creator TEXT NOT NULL DEFAULT '', last_date TEXT NOT NULL DEFAULT '', description TEXT NOT NULL DEFAULT '', rating INTEGER NOT NULL DEFAULT 0, cover_url TEXT, updated_at TEXT NOT NULL)`,
+    `CREATE TABLE IF NOT EXISTS side_hustles (id TEXT PRIMARY KEY, sync_code TEXT NOT NULL, platform TEXT NOT NULL DEFAULT '', topic TEXT NOT NULL DEFAULT '', format TEXT NOT NULL DEFAULT 'other', publish_date TEXT NOT NULL DEFAULT '', status TEXT NOT NULL DEFAULT 'concept', updated_at TEXT NOT NULL)`,
+    `CREATE TABLE IF NOT EXISTS diary_notes (id TEXT PRIMARY KEY, sync_code TEXT NOT NULL, title TEXT NOT NULL DEFAULT '', date TEXT NOT NULL DEFAULT '', weather TEXT, mood TEXT, category TEXT NOT NULL DEFAULT '', content TEXT NOT NULL DEFAULT '', tags TEXT NOT NULL DEFAULT '[]', updated_at TEXT NOT NULL)`,
+    `CREATE TABLE IF NOT EXISTS inbox_items (id TEXT PRIMARY KEY, sync_code TEXT NOT NULL, title TEXT NOT NULL DEFAULT '', url TEXT, notes TEXT, category TEXT NOT NULL DEFAULT '', is_reviewed INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL, updated_at TEXT NOT NULL)`,
+  ];
+  for (const sql of sgTables) await sg.exec(sql);
 
   const p = env.PARENTING_DB;
-  await p.exec(`CREATE TABLE IF NOT EXISTS child_milestones (id TEXT PRIMARY KEY, sync_code TEXT NOT NULL, title TEXT NOT NULL DEFAULT '', date TEXT NOT NULL DEFAULT '', notes TEXT NOT NULL DEFAULT '', updated_at TEXT NOT NULL)`);
-  await p.exec(`CREATE TABLE IF NOT EXISTS child_logs (id TEXT PRIMARY KEY, sync_code TEXT NOT NULL, time TEXT NOT NULL DEFAULT '', type TEXT NOT NULL DEFAULT 'notes', spec TEXT NOT NULL DEFAULT '', notes TEXT NOT NULL DEFAULT '', updated_at TEXT NOT NULL)`);
-  await p.exec(`CREATE TABLE IF NOT EXISTS child_diaries (id TEXT PRIMARY KEY, sync_code TEXT NOT NULL, date TEXT NOT NULL DEFAULT '', title TEXT NOT NULL DEFAULT '', content TEXT NOT NULL DEFAULT '', mood TEXT, height TEXT, weight TEXT, updated_at TEXT NOT NULL)`);
+  const pTables = [
+    `CREATE TABLE IF NOT EXISTS child_milestones (id TEXT PRIMARY KEY, sync_code TEXT NOT NULL, title TEXT NOT NULL DEFAULT '', date TEXT NOT NULL DEFAULT '', notes TEXT NOT NULL DEFAULT '', updated_at TEXT NOT NULL)`,
+    `CREATE TABLE IF NOT EXISTS child_logs (id TEXT PRIMARY KEY, sync_code TEXT NOT NULL, time TEXT NOT NULL DEFAULT '', type TEXT NOT NULL DEFAULT 'notes', spec TEXT NOT NULL DEFAULT '', notes TEXT NOT NULL DEFAULT '', updated_at TEXT NOT NULL)`,
+    `CREATE TABLE IF NOT EXISTS child_diaries (id TEXT PRIMARY KEY, sync_code TEXT NOT NULL, date TEXT NOT NULL DEFAULT '', title TEXT NOT NULL DEFAULT '', content TEXT NOT NULL DEFAULT '', mood TEXT, height TEXT, weight TEXT, updated_at TEXT NOT NULL)`,
+    `CREATE TABLE IF NOT EXISTS parenting_resources (id TEXT PRIMARY KEY, sync_code TEXT NOT NULL, name TEXT NOT NULL DEFAULT '', type TEXT NOT NULL DEFAULT 'app', subject TEXT, age_range TEXT, rating INTEGER NOT NULL DEFAULT 0, notes TEXT, url TEXT, updated_at TEXT NOT NULL)`,
+  ];
+  for (const sql of pTables) await p.exec(sql);
 
   const g = env.GENERAL_DB;
-  await g.exec(`CREATE TABLE IF NOT EXISTS planner_cells (id TEXT PRIMARY KEY, sync_code TEXT NOT NULL, text TEXT NOT NULL DEFAULT '', color TEXT NOT NULL DEFAULT '', tag TEXT, updated_at TEXT NOT NULL)`);
-  await g.exec(`CREATE TABLE IF NOT EXISTS habits (id TEXT PRIMARY KEY, sync_code TEXT NOT NULL, name TEXT NOT NULL, history TEXT NOT NULL DEFAULT '{}', updated_at TEXT NOT NULL)`);
-  await g.exec(`CREATE TABLE IF NOT EXISTS weekly_summary (id TEXT PRIMARY KEY, sync_code TEXT NOT NULL, theme TEXT NOT NULL DEFAULT '', priorities TEXT NOT NULL DEFAULT '[]', practice TEXT NOT NULL DEFAULT '', reminder TEXT NOT NULL DEFAULT '', review_question TEXT NOT NULL DEFAULT '', today_notes TEXT NOT NULL DEFAULT '{}', updated_at TEXT NOT NULL)`);
-  await g.exec(`CREATE TABLE IF NOT EXISTS financial_metrics (id TEXT PRIMARY KEY, sync_code TEXT NOT NULL, month TEXT NOT NULL DEFAULT '', traffic INTEGER NOT NULL DEFAULT 0, revenue INTEGER NOT NULL DEFAULT 0, expense INTEGER NOT NULL DEFAULT 0, note TEXT NOT NULL DEFAULT '', updated_at TEXT NOT NULL)`);
+  const gTables = [
+    `CREATE TABLE IF NOT EXISTS planner_cells (id TEXT PRIMARY KEY, sync_code TEXT NOT NULL, text TEXT NOT NULL DEFAULT '', color TEXT NOT NULL DEFAULT '', tag TEXT, updated_at TEXT NOT NULL)`,
+    `CREATE TABLE IF NOT EXISTS habits (id TEXT PRIMARY KEY, sync_code TEXT NOT NULL, name TEXT NOT NULL, history TEXT NOT NULL DEFAULT '{}', updated_at TEXT NOT NULL)`,
+    `CREATE TABLE IF NOT EXISTS weekly_summary (id TEXT PRIMARY KEY, sync_code TEXT NOT NULL, theme TEXT NOT NULL DEFAULT '', priorities TEXT NOT NULL DEFAULT '[]', practice TEXT NOT NULL DEFAULT '', reminder TEXT NOT NULL DEFAULT '', review_question TEXT NOT NULL DEFAULT '', today_notes TEXT NOT NULL DEFAULT '{}', updated_at TEXT NOT NULL)`,
+    `CREATE TABLE IF NOT EXISTS financial_metrics (id TEXT PRIMARY KEY, sync_code TEXT NOT NULL, month TEXT NOT NULL DEFAULT '', traffic INTEGER NOT NULL DEFAULT 0, revenue INTEGER NOT NULL DEFAULT 0, expense INTEGER NOT NULL DEFAULT 0, note TEXT NOT NULL DEFAULT '', updated_at TEXT NOT NULL)`,
+    `CREATE TABLE IF NOT EXISTS fitness_logs (id TEXT PRIMARY KEY, sync_code TEXT NOT NULL, date TEXT NOT NULL DEFAULT '', weight REAL, exercise TEXT, duration INTEGER, calories INTEGER, meals TEXT, note TEXT, updated_at TEXT NOT NULL)`,
+  ];
+  for (const sql of gTables) await g.exec(sql);
 }
 
 async function handleSelfGrowth(request, env, path, method, syncCode) {
@@ -179,6 +191,24 @@ async function handleSelfGrowth(request, env, path, method, syncCode) {
     }
   }
 
+  if (path === '/api/self-growth/inbox') {
+    if (method === 'GET') {
+      const { results } = await db.prepare('SELECT * FROM inbox_items WHERE sync_code = ? ORDER BY created_at DESC').bind(syncCode).all();
+      return json(results.map(r => ({ id: r.id, title: r.title, url: r.url, notes: r.notes, category: r.category, isReviewed: r.is_reviewed === 1, createdAt: r.created_at })));
+    }
+    if (method === 'POST') {
+      const b = await request.json();
+      const createdAt = b.createdAt || now();
+      await db.prepare('INSERT OR REPLACE INTO inbox_items (id, sync_code, title, url, notes, category, is_reviewed, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)').bind(b.id, syncCode, b.title ?? '', b.url ?? null, b.notes ?? null, b.category ?? '', b.isReviewed ? 1 : 0, createdAt, now()).run();
+      return json({ ok: true });
+    }
+    if (method === 'DELETE') {
+      const id = new URL(request.url).searchParams.get('id');
+      await db.prepare('DELETE FROM inbox_items WHERE id = ? AND sync_code = ?').bind(id, syncCode).run();
+      return json({ ok: true });
+    }
+  }
+
   return err('Not found', 404);
 }
 
@@ -232,6 +262,23 @@ async function handleParenting(request, env, path, method, syncCode) {
     if (method === 'DELETE') {
       const id = new URL(request.url).searchParams.get('id');
       await db.prepare('DELETE FROM child_diaries WHERE id = ? AND sync_code = ?').bind(id, syncCode).run();
+      return json({ ok: true });
+    }
+  }
+
+  if (path === '/api/parenting/resources') {
+    if (method === 'GET') {
+      const { results } = await db.prepare('SELECT * FROM parenting_resources WHERE sync_code = ? ORDER BY updated_at DESC').bind(syncCode).all();
+      return json(results.map(r => ({ id: r.id, name: r.name, type: r.type, subject: r.subject, ageRange: r.age_range, rating: r.rating, notes: r.notes, url: r.url })));
+    }
+    if (method === 'POST') {
+      const b = await request.json();
+      await db.prepare('INSERT OR REPLACE INTO parenting_resources (id, sync_code, name, type, subject, age_range, rating, notes, url, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').bind(b.id, syncCode, b.name ?? '', b.type ?? 'app', b.subject ?? null, b.ageRange ?? null, b.rating ?? 0, b.notes ?? null, b.url ?? null, now()).run();
+      return json({ ok: true });
+    }
+    if (method === 'DELETE') {
+      const id = new URL(request.url).searchParams.get('id');
+      await db.prepare('DELETE FROM parenting_resources WHERE id = ? AND sync_code = ?').bind(id, syncCode).run();
       return json({ ok: true });
     }
   }
@@ -314,6 +361,23 @@ async function handleGeneral(request, env, path, method, syncCode) {
     if (method === 'DELETE') {
       const id = new URL(request.url).searchParams.get('id');
       await db.prepare('DELETE FROM financial_metrics WHERE id = ? AND sync_code = ?').bind(id, syncCode).run();
+      return json({ ok: true });
+    }
+  }
+
+  if (path === '/api/general/fitness') {
+    if (method === 'GET') {
+      const { results } = await db.prepare('SELECT * FROM fitness_logs WHERE sync_code = ? ORDER BY date DESC').bind(syncCode).all();
+      return json(results.map(r => ({ id: r.id, date: r.date, weight: r.weight, exercise: r.exercise, duration: r.duration, calories: r.calories, meals: r.meals, note: r.note })));
+    }
+    if (method === 'POST') {
+      const b = await request.json();
+      await db.prepare('INSERT OR REPLACE INTO fitness_logs (id, sync_code, date, weight, exercise, duration, calories, meals, note, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').bind(b.id, syncCode, b.date ?? '', b.weight ?? null, b.exercise ?? null, b.duration ?? null, b.calories ?? null, b.meals ?? null, b.note ?? null, now()).run();
+      return json({ ok: true });
+    }
+    if (method === 'DELETE') {
+      const id = new URL(request.url).searchParams.get('id');
+      await db.prepare('DELETE FROM fitness_logs WHERE id = ? AND sync_code = ?').bind(id, syncCode).run();
       return json({ ok: true });
     }
   }

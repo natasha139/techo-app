@@ -10,6 +10,7 @@ interface BabyTechoGridProps {
   todayNotes: { [dayIndex: number]: string };
   onSaveTodayNote: (dayIndex: number, text: string) => void;
   childName?: string;
+  weekOffset?: number;
 }
 
 const colorPresets = [
@@ -21,11 +22,11 @@ const colorPresets = [
   { label: '其他', bg: '#fffbeb', border: '#fef3c7', textClass: 'text-amber-900' },
 ];
 
-function getCurrentWeekDays() {
+function getCurrentWeekDays(weekOffset = 0) {
   const today = new Date();
   const dayOfWeek = today.getDay();
   const monday = new Date(today);
-  monday.setDate(today.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+  monday.setDate(today.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1) + weekOffset * 7);
 
   return Array.from({ length: 7 }).map((_, i) => {
     const d = new Date(monday);
@@ -128,8 +129,9 @@ export default function BabyTechoGrid({
   todayNotes,
   onSaveTodayNote,
   childName = '小树',
+  weekOffset = 0,
 }: BabyTechoGridProps) {
-  const daysOfWeek = getCurrentWeekDays();
+  const daysOfWeek = getCurrentWeekDays(weekOffset);
   const today = new Date();
   const hours = Array.from({ length: 24 }).map((_, i) => i);
   const monthStr = `${today.getFullYear()}年${today.getMonth() + 1}月`;

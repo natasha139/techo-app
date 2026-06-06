@@ -22,7 +22,9 @@ import {
   HelpCircle,
   Palette,
   Type,
-  Key
+  Key,
+  Inbox,
+  Activity
 } from 'lucide-react';
 
 import {
@@ -39,7 +41,10 @@ import {
   DiaryNote,
   HabitTracker,
   ChildDiary,
-  WeeklySummary
+  WeeklySummary,
+  InboxItem,
+  FitnessLog,
+  ParentingResource
 } from './types';
 
 import {
@@ -68,6 +73,8 @@ import MediaSideHustleSection from './components/MediaSideHustleSection';
 import ParentingSection from './components/ParentingSection';
 import D1Console from './components/D1Console';
 import DiarySection from './components/DiarySection';
+import InboxSection from './components/InboxSection';
+import FitnessSection from './components/FitnessSection';
 
 export const TECH_THEMES = [
   {
@@ -240,8 +247,9 @@ export default function App() {
   };
 
   // -- MAIN CONTENT TAB SELECTOR --
-  const [activeTab, setActiveTab] = useState<'week' | 'self_growth' | 'work' | 'hobby' | 'media' | 'parenting' | 'diary' | 'database'>('week');
+  const [activeTab, setActiveTab] = useState<'week' | 'self_growth' | 'work' | 'hobby' | 'media' | 'parenting' | 'diary' | 'inbox' | 'fitness' | 'database'>('week');
   const [weekPlan, setWeekPlan] = useState<'mine' | 'baby'>('mine');
+  const [weekOffset, setWeekOffset] = useState<number>(0); // 0=当周, 1=下周, 2=下下周...
   const babyTodayNotesDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // -- STATE ENGINES --
@@ -260,6 +268,9 @@ export default function App() {
   const [habits, setHabits] = useState<HabitTracker[]>([]);
   const [childDiaries, setChildDiaries] = useState<ChildDiary[]>([]);
   const [weeklySummary, setWeeklySummary] = useState<WeeklySummary>(initialWeeklySummary);
+  const [inboxItems, setInboxItems] = useState<InboxItem[]>([]);
+  const [fitnessLogs, setFitnessLogs] = useState<FitnessLog[]>([]);
+  const [parentingResources, setParentingResources] = useState<ParentingResource[]>([]);
   
   // Today's Notes local state for days Mon-Sun (Indices 0 - 6)
   const [todayNotes, setTodayNotes] = useState<{ [dayIndex: number]: string }>({
@@ -290,6 +301,7 @@ export default function App() {
         wishData, skillData, workData, hobbyData, shData, diaryData,
         milestoneData, childLogData, childDiaryData,
         cellData, habitData, summaryData, financeData,
+        inboxData, fitnessData, parentingResourceData,
       ] = await Promise.all([
         api.wishes.list(sc),
         api.skills.list(sc),
@@ -304,6 +316,9 @@ export default function App() {
         api.habits.list(sc),
         api.weeklySummary.get(sc),
         api.finance.list(sc),
+        api.inbox.list(sc),
+        api.fitness.list(sc),
+        api.parentingResources.list(sc),
       ]);
 
       setWishes(wishData.map((w: any) => ({ id: w.id, order: w.ord, content: w.content, isCompleted: w.is_completed === 1, category: w.category })));
@@ -319,6 +334,9 @@ export default function App() {
       setBabyCells(cellData.filter((c: PlannerCell) => c.id.startsWith('baby_')));
       setHabits(habitData);
       setFinance(financeData);
+      setInboxItems(inboxData);
+      setFitnessLogs(fitnessData);
+      setParentingResources(parentingResourceData);
 
       if (summaryData) {
         setWeeklySummary({ ...initialWeeklySummary, ...summaryData });
@@ -669,6 +687,56 @@ export default function App() {
   const handleDeleteDiary = (id: string) => {
     setDiaryNotes(prev => prev.filter(n => n.id !== id));
     apiCall(() => api.diary.delete(syncCode, id), 'diary_notes');
+  };
+
+  // 9. Inbox
+  const handleAddInbox = (item: Omit<InboxItem, 'id'>) => {
+    const newItem: InboxItem = { ...item, id: `inbox_${Date.now()}` };
+    setInboxItems(prev => [newItem, ...prev]);
+    apiCall(() => api.inbox.upsert(syncCode, newItem), 'inbox_items');
+  };
+
+  const handleUpdateInbox = (id: string, fields: Partial<InboxItem>) => {
+    const updated = inboxItems.map(i => i.id === id ? { ...i, ...fields } : i);
+    setInboxItems(updated);
+    const item = updated.find(i => i.id === id)!;
+    apiCall(() => api.inbox.upsert(syncCode, item), 'inbox_items');
+  };
+
+  const handleDeleteInbox = (id: string) => {
+    setInboxItems(prev => prev.filter(i => i.id !== id));
+    apiCall(() => api.inbox.delete(syncCode, id), 'inbox_items');
+  };
+
+  // 10. Fitness
+  const handleAddFitness = (log: Omit<FitnessLog, 'id'>) => {
+    const item: FitnessLog = { ...log, id: `fit_${Date.now()}` };
+    setFitnessLogs(prev => [item, ...prev]);
+    apiCall(() => api.fitness.upsert(syncCode, item), 'fitness_logs');
+  };
+
+  const handleUpdateFitness = (id: string, fields: Partial<FitnessLog>) => {
+    const updated = fitnessLogs.map(l => l.id === id ? { ...l, ...fields } : l);
+    setFitnessLogs(updated);
+    const item = updated.find(l => l.id === id)!;
+    apiCall(() => api.fitness.upsert(syncCode, item), 'fitness_logs');
+  };
+
+  const handleDeleteFitness = (id: string) => {
+    setFitnessLogs(prev => prev.filter(l => l.id !== id));
+    apiCall(() => api.fitness.delete(syncCode, id), 'fitness_logs');
+  };
+
+  // 11. Parenting Resources
+  const handleAddParentingResource = (r: Omit<ParentingResource, 'id'>) => {
+    const item: ParentingResource = { ...r, id: `pr_${Date.now()}` };
+    setParentingResources(prev => [item, ...prev]);
+    apiCall(() => api.parentingResources.upsert(syncCode, item), 'parenting_resources');
+  };
+
+  const handleDeleteParentingResource = (id: string) => {
+    setParentingResources(prev => prev.filter(r => r.id !== id));
+    apiCall(() => api.parentingResources.delete(syncCode, id), 'parenting_resources');
   };
 
   // -- REAL D1 SYNC (reload from API) --
@@ -1114,13 +1182,42 @@ export default function App() {
             <button
               onClick={() => setActiveTab('diary')}
               className={`w-full p-2 text-xs font-semibold rounded text-left flex items-center gap-2 transition-all cursor-pointer ${
-                activeTab === 'diary' 
-                  ? 'bg-white border-l-4 border-techo-teal text-[#333] shadow-xs font-bold' 
+                activeTab === 'diary'
+                  ? 'bg-white border-l-4 border-techo-teal text-[#333] shadow-xs font-bold'
                   : 'text-[#6e685a] hover:bg-white/60 hover:text-black'
               }`}
             >
               <BookOpen size={14} className="text-techo-teal" />
               <span>随笔・心境日记本</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('inbox')}
+              className={`w-full p-2 text-xs font-semibold rounded text-left flex items-center gap-2 transition-all cursor-pointer ${
+                activeTab === 'inbox'
+                  ? 'bg-white border-l-4 border-techo-teal text-[#333] shadow-xs font-bold'
+                  : 'text-[#6e685a] hover:bg-white/60 hover:text-black'
+              }`}
+            >
+              <Inbox size={14} className="text-amber-500" />
+              <span className="flex-1">信息收集箱</span>
+              {inboxItems.filter(i => !i.isReviewed).length > 0 && (
+                <span className="text-[9px] font-bold bg-amber-400 text-white px-1 rounded-full leading-none py-0.5">
+                  {inboxItems.filter(i => !i.isReviewed).length}
+                </span>
+              )}
+            </button>
+
+            <button
+              onClick={() => setActiveTab('fitness')}
+              className={`w-full p-2 text-xs font-semibold rounded text-left flex items-center gap-2 transition-all cursor-pointer ${
+                activeTab === 'fitness'
+                  ? 'bg-white border-l-4 border-techo-teal text-[#333] shadow-xs font-bold'
+                  : 'text-[#6e685a] hover:bg-white/60 hover:text-black'
+              }`}
+            >
+              <Activity size={14} className="text-emerald-500" />
+              <span>健康・运动打卡</span>
             </button>
 
             <div className="h-[1px] bg-[#eae6d8] my-1.5" />
@@ -1143,23 +1240,53 @@ export default function App() {
             {activeTab === 'week' && (
               <div className="flex flex-col gap-3">
                 {/* 我的 / 小树 切换 */}
-                <div className="flex items-center gap-1 bg-[#f5f3eb] border border-[#d6cfbe] p-1 rounded-md text-xs w-fit select-none">
-                  <button
-                    onClick={() => setWeekPlan('mine')}
-                    className={`px-3 py-1 rounded font-semibold transition-all cursor-pointer ${
-                      weekPlan === 'mine' ? 'bg-[#8a816c] text-white shadow-xs' : 'text-[#6e685a] hover:bg-[#eae6d8]'
-                    }`}
-                  >
-                    我的计划
-                  </button>
-                  <button
-                    onClick={() => setWeekPlan('baby')}
-                    className={`px-3 py-1 rounded font-semibold transition-all cursor-pointer ${
-                      weekPlan === 'baby' ? 'bg-[#c06080] text-white shadow-xs' : 'text-[#6e685a] hover:bg-[#eae6d8]'
-                    }`}
-                  >
-                    🌱 小树的计划
-                  </button>
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <div className="flex items-center gap-1 bg-[#f5f3eb] border border-[#d6cfbe] p-1 rounded-md text-xs select-none">
+                    <button
+                      onClick={() => setWeekPlan('mine')}
+                      className={`px-3 py-1 rounded font-semibold transition-all cursor-pointer ${
+                        weekPlan === 'mine' ? 'bg-[#8a816c] text-white shadow-xs' : 'text-[#6e685a] hover:bg-[#eae6d8]'
+                      }`}
+                    >
+                      我的计划
+                    </button>
+                    <button
+                      onClick={() => setWeekPlan('baby')}
+                      className={`px-3 py-1 rounded font-semibold transition-all cursor-pointer ${
+                        weekPlan === 'baby' ? 'bg-[#c06080] text-white shadow-xs' : 'text-[#6e685a] hover:bg-[#eae6d8]'
+                      }`}
+                    >
+                      🌱 小树的计划
+                    </button>
+                  </div>
+                  {/* 多周切换 */}
+                  <div className="flex items-center gap-1 bg-[#f5f3eb] border border-[#d6cfbe] p-1 rounded-md text-xs select-none">
+                    <button
+                      onClick={() => setWeekOffset(prev => Math.max(0, prev - 1))}
+                      disabled={weekOffset === 0}
+                      className="px-2 py-1 rounded font-bold text-[#6e685a] hover:bg-[#eae6d8] disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-all"
+                    >
+                      ‹
+                    </button>
+                    <span className="px-2 py-1 font-semibold text-[#48453f]">
+                      {weekOffset === 0 ? '本周' : weekOffset === 1 ? '下周' : weekOffset < 5 ? `${weekOffset}周后` : `${Math.round(weekOffset / 4)}个月后`}
+                    </span>
+                    <button
+                      onClick={() => setWeekOffset(prev => Math.min(12, prev + 1))}
+                      disabled={weekOffset >= 12}
+                      className="px-2 py-1 rounded font-bold text-[#6e685a] hover:bg-[#eae6d8] disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-all"
+                    >
+                      ›
+                    </button>
+                    {weekOffset > 0 && (
+                      <button
+                        onClick={() => setWeekOffset(0)}
+                        className="px-2 py-0.5 text-[9px] font-bold text-techo-teal hover:underline cursor-pointer"
+                      >
+                        回本周
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 {weekPlan === 'mine' && (
@@ -1176,6 +1303,7 @@ export default function App() {
                     onDeleteHabit={handleDeleteHabit}
                     weeklySummary={weeklySummary}
                     onSaveWeeklySummary={handleSaveWeeklySummary}
+                    weekOffset={weekOffset}
                   />
                 )}
 
@@ -1187,6 +1315,7 @@ export default function App() {
                     todayNotes={babyTodayNotes}
                     onSaveTodayNote={handleSaveBabyTodayNote}
                     childName="小树"
+                    weekOffset={weekOffset}
                   />
                 )}
               </div>
@@ -1250,6 +1379,9 @@ export default function App() {
                 childLogs={childLogs}
                 onAddChildLog={handleAddChildLog}
                 onDeleteChildLog={handleDeleteChildLog}
+                resources={parentingResources}
+                onAddResource={handleAddParentingResource}
+                onDeleteResource={handleDeleteParentingResource}
               />
             )}
 
@@ -1260,6 +1392,24 @@ export default function App() {
                 onAddDiary={handleAddDiary}
                 onUpdateDiary={handleUpdateDiary}
                 onDeleteDiary={handleDeleteDiary}
+              />
+            )}
+
+            {activeTab === 'inbox' && (
+              <InboxSection
+                items={inboxItems}
+                onAdd={handleAddInbox}
+                onUpdate={handleUpdateInbox}
+                onDelete={handleDeleteInbox}
+              />
+            )}
+
+            {activeTab === 'fitness' && (
+              <FitnessSection
+                logs={fitnessLogs}
+                onAdd={handleAddFitness}
+                onUpdate={handleUpdateFitness}
+                onDelete={handleDeleteFitness}
               />
             )}
 

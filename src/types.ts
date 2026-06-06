@@ -126,6 +126,41 @@ export interface ChildDiary {
   title: string;
   content: string;
   mood?: string;
-  height?: string; // e.g. "72" or "72cm"
-  weight?: string; // e.g. "9.5" or "9.5kg"
+  height?: string; // e.g. "120" or "120cm"
+  weight?: string; // e.g. "25" or "25kg"
+}
+
+// 信息收集条目 (Inbox Clipping)
+export interface InboxItem {
+  id: string;
+  title: string;       // 项目名称，如 "ICEP HK 教育规划师"
+  url?: string;        // 来源链接（可选）
+  notes?: string;      // 简短备注
+  category: string;    // 分类标签，如 "教育资源" / "工具" / "课程" / "待研究"
+  isReviewed: boolean; // 是否已查阅
+  createdAt: string;   // ISO date string
+}
+
+// 健身/健康打卡记录
+export interface FitnessLog {
+  id: string;
+  date: string;        // "2026-06-07"
+  weight?: number;     // 体重 kg
+  exercise?: string;   // 运动内容描述
+  duration?: number;   // 运动时长 (分钟)
+  calories?: number;   // 消耗卡路里 (可选)
+  meals?: string;      // 当日饮食记录
+  note?: string;       // 额外备注
+}
+
+// 育儿资源条目 (工具/书籍/App)
+export interface ParentingResource {
+  id: string;
+  name: string;        // 名称，如 "Khan Academy Kids"
+  type: 'app' | 'book' | 'tool' | 'course' | 'website';
+  subject?: string;    // 学科/领域，如 "数学" / "英语" / "编程"
+  ageRange?: string;   // 适合年龄，如 "6-10岁"
+  rating?: number;     // 1-5 评分
+  notes?: string;      // 使用心得
+  url?: string;
 }

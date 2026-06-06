@@ -42,6 +42,7 @@ interface TechoGridProps {
   onDeleteHabit: (id: string) => void;
   weeklySummary: WeeklySummary;
   onSaveWeeklySummary: (summary: WeeklySummary) => void;
+  weekOffset?: number;
 }
 
 const colorPresets = [
@@ -280,7 +281,8 @@ export default function TechoGrid({
   onAddHabit,
   onDeleteHabit,
   weeklySummary,
-  onSaveWeeklySummary
+  onSaveWeeklySummary,
+  weekOffset = 0,
 }: TechoGridProps) {
   // Dynamic current week calculation
   const today = new Date();
@@ -291,10 +293,10 @@ export default function TechoGrid({
   const currentDayNum = today.getDate();
   const currentDaysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
 
-  // Get Monday of current week
-  const dayOfWeek = today.getDay(); // 0=Sun, 1=Mon...
+  // Get Monday of the target week (offset by weekOffset weeks)
+  const dayOfWeek = today.getDay();
   const monday = new Date(today);
-  monday.setDate(today.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+  monday.setDate(today.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1) + weekOffset * 7);
 
   const weekDayNames = [
     { dayName: '月', text: '周一' },
