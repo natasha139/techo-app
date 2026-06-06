@@ -1,6 +1,4 @@
 name = "techo-app"
-pages_build_output_dir = "dist"
-build.command = "npm run build"
 compatibility_date = "2025-01-01"
 
 [[d1_databases]]
