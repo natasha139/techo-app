@@ -282,18 +282,61 @@ export default function TechoGrid({
   weeklySummary,
   onSaveWeeklySummary
 }: TechoGridProps) {
-  // Navigation variables based on 2026.06.01 - 06.07
-  const currentYear = '2026';
-  const currentMonth = '六月';
-  const daysOfWeek = [
-    { dayName: '月', text: '周一', dateStr: '06.01', isToday: false },
-    { dayName: '火', text: '周二', dateStr: '06.02', isToday: true }, // 2026-06-02 is today!
-    { dayName: '水', text: '周三', dateStr: '06.03', isToday: false },
-    { dayName: '木', text: '周四', dateStr: '06.04', isToday: false },
-    { dayName: '金', text: '周五', dateStr: '06.05', isToday: false },
-    { dayName: '土', text: '周六', dateStr: '06.06', isToday: false },
-    { dayName: '日', text: '周日', dateStr: '06.07', isToday: false }
+  // Dynamic current week calculation
+  const today = new Date();
+  const currentYear = String(today.getFullYear());
+  const chineseMonths = ['一', '二', '三', '四', '五', '六', '七', '八', '九', '十', '十一', '十二'];
+  const currentMonth = chineseMonths[today.getMonth()] + '月';
+  const currentMonthNum = today.getMonth() + 1;
+  const currentDayNum = today.getDate();
+  const currentDaysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+
+  // Get Monday of current week
+  const dayOfWeek = today.getDay(); // 0=Sun, 1=Mon...
+  const monday = new Date(today);
+  monday.setDate(today.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+
+  const weekDayNames = [
+    { dayName: '月', text: '周一' },
+    { dayName: '火', text: '周二' },
+    { dayName: '水', text: '周三' },
+    { dayName: '木', text: '周四' },
+    { dayName: '金', text: '周五' },
+    { dayName: '土', text: '周六' },
+    { dayName: '日', text: '周日' },
   ];
+  const daysOfWeek = weekDayNames.map((d, i) => {
+    const date = new Date(monday);
+    date.setDate(monday.getDate() + i);
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const dd = String(date.getDate()).padStart(2, '0');
+    return {
+      ...d,
+      dateStr: `${m}.${dd}`,
+      isToday: date.toDateString() === today.toDateString(),
+      _date: date,
+    };
+  });
+
+  // Week number (ISO)
+  const getISOWeek = (d: Date) => {
+    const date = new Date(d);
+    date.setHours(0, 0, 0, 0);
+    date.setDate(date.getDate() + 3 - ((date.getDay() + 6) % 7));
+    const week1 = new Date(date.getFullYear(), 0, 4);
+    return 1 + Math.round(((date.getTime() - week1.getTime()) / 86400000 - 3 + ((week1.getDay() + 6) % 7)) / 7);
+  };
+  const weekNumber = getISOWeek(today);
+
+  // Week range label (e.g. "6月2日 – 8日" or cross-month "5月30日 – 6月5日")
+  const mondayDate = daysOfWeek[0]._date;
+  const sundayDate = daysOfWeek[6]._date;
+  const weekRangeLabel = mondayDate.getMonth() === sundayDate.getMonth()
+    ? `${mondayDate.getMonth() + 1}月${mondayDate.getDate()}日 – ${sundayDate.getDate()}日`
+    : `${mondayDate.getMonth() + 1}月${mondayDate.getDate()}日 – ${sundayDate.getMonth() + 1}月${sundayDate.getDate()}日`;
+
+  // Today's day-of-week index (0=Mon..6=Sun) within the current week, -1 if today not in this week
+  const todayWeekIdx = daysOfWeek.findIndex(d => d.isToday);
 
   // --- HABIT STREAK & COLOR ASSOCIATIONS ---
   const dailyHabitStats = Array.from({ length: 7 }).map((_, dIdx) => {
@@ -403,7 +446,7 @@ export default function TechoGrid({
   const [noteText, setNoteText] = useState('');
 
   // Selected Day on Mini Calendar
-  const [selectedDay, setSelectedDay] = useState<number>(2); // Default to June 2nd
+  const [selectedDay, setSelectedDay] = useState<number>(todayWeekIdx >= 0 ? todayWeekIdx + 1 : 1);
   const [selectedDayNote, setSelectedDayNote] = useState<string>('');
   const [saveSuccess, setSaveSuccess] = useState<boolean>(false);
   const [newHabitName, setNewHabitName] = useState('');
@@ -704,7 +747,7 @@ export default function TechoGrid({
             JIBUN TECHO
           </div>
           <div className="h-[2px] w-12 bg-[#8a8069]/30 my-1"></div>
-          <div className="text-xs text-[#8a816b] font-mono">自我成长手帐 2026</div>
+          <div className="text-xs text-[#8a816b] font-mono">自我成长手帐 {currentYear}</div>
           <div className="text-[10px] bg-[#8a816b]/10 text-[#8a816b] px-2 py-0.5 rounded-full font-mono font-bold mt-1.5 uppercase tracking-wider">
             ✍️ {username}'s Edition
           </div>
@@ -723,7 +766,7 @@ export default function TechoGrid({
             <div className="flex items-center justify-between mb-3 border-b-2 border-[#eae6d8] pb-2">
               <span className="font-display font-semibold text-[#4a473e] text-sm flex items-center gap-1.5">
                 <Calendar size={14} className="text-[#a19c8d]" />
-                2026 六 月 (June)
+                {currentYear} {currentMonth.replace('月', '')} 月 ({['January','February','March','April','May','June','July','August','September','October','November','December'][today.getMonth()]})
               </span>
               <div className="flex gap-1">
                 <button type="button" className="p-0.5 hover:bg-[#eae6d8] rounded transition-colors text-[#6e685a]" disabled={true}>
@@ -742,13 +785,15 @@ export default function TechoGrid({
                   {day}
                 </div>
               ))}
-              {/* Space offset for 2026 June 1st which is a Monday */}
-              <div className="p-1"></div>
-              {Array.from({ length: 30 }).map((_, idx) => {
+              {/* Offset for first day of month */}
+              {Array.from({ length: (() => { const d = new Date(today.getFullYear(), today.getMonth(), 1).getDay(); return d === 0 ? 1 : d - 1 === -1 ? 6 : d - 1; })() }).map((_, i) => (
+                <div key={`offset-${i}`} className="p-1" />
+              ))}
+              {Array.from({ length: currentDaysInMonth }).map((_, idx) => {
                 const dayNum = idx + 1;
-                // Highlight June 1 to June 7
-                const isCurrentWeek = dayNum >= 1 && dayNum <= 7;
-                const isToday = dayNum === 2; // June 2!
+                const thisDate = new Date(today.getFullYear(), today.getMonth(), dayNum);
+                const isCurrentWeek = thisDate >= mondayDate && thisDate <= sundayDate;
+                const isToday = dayNum === currentDayNum;
                 const isSelected = dayNum === selectedDay;
 
                 return (
@@ -765,7 +810,7 @@ export default function TechoGrid({
                             ? 'bg-[#f4efe0] hover:bg-techo-teal/15 text-[#4a473e] font-semibold border border-[#d6cfb8]/50' 
                             : 'text-[#cbc4b8] hover:text-[#4a473e] hover:bg-[#eae6d8]/40'
                     }`}
-                    title={`点击选中: 6月${dayNum}日 / Select June ${dayNum}th`}
+                    title={`点击选中: ${currentMonthNum}月${dayNum}日 / Select ${['January','February','March','April','May','June','July','August','September','October','November','December'][today.getMonth()]} ${dayNum}`}
                   >
                     {dayNum}
                   </button>
@@ -777,14 +822,12 @@ export default function TechoGrid({
             <div className="mt-4 p-3 border-2 border-[#eae6d8] rounded-md bg-[#fafaf6] text-[11px] text-[#7d7768] space-y-2">
               <div className="flex items-center justify-between border-b border-[#eae6d8] pb-1.5">
                 <span className="font-display font-black text-xs text-[#4a473e] flex items-center gap-1 leading-none">
-                  📅 6月{selectedDay}日 • {
-                    selectedDay >= 1 && selectedDay <= 7 
-                      ? `${['周一', '周二', '周三', '周四', '周五', '周六', '周日'][selectedDay - 1]}便签` 
-                      : '日面快记/Memo'
+                  📅 {currentMonthNum}月{selectedDay}日 • {
+                    (() => { const idx = daysOfWeek.findIndex(d => d._date.getDate() === selectedDay && d._date.getMonth() === today.getMonth()); return idx >= 0 ? `${daysOfWeek[idx].text}便签` : '日面快记/Memo'; })()
                   }
                 </span>
                 <span className="text-[9px] bg-techo-teal/15 text-techo-teal font-sans px-1 rounded-sm font-bold scale-95 origin-right">
-                  {selectedDay >= 1 && selectedDay <= 7 ? '✨ 周视图联动' : '💭 自由写本'}
+                  {daysOfWeek.some(d => d._date.getDate() === selectedDay && d._date.getMonth() === today.getMonth()) ? '✨ 周视图联动' : '💭 自由写本'}
                 </span>
               </div>
               
@@ -1026,13 +1069,13 @@ export default function TechoGrid({
               {currentYear}
             </span>
             <h2 className="font-display font-bold text-[#48453f] text-md flex items-center gap-2">
-              <span>{currentMonth} 1日 – 7日</span>
-              <span className="text-[#a19c8d] font-normal text-xs font-sans">(第 23 周)</span>
+              <span>{weekRangeLabel}</span>
+              <span className="text-[#a19c8d] font-normal text-xs font-sans">(第 {weekNumber} 周)</span>
             </h2>
           </div>
           <div className="flex items-center gap-2 text-xs text-[#827b68] font-medium bg-white/70 border border-[#e3dfd3] px-2 py-1 rounded">
             <Clock size={12} className="text-techo-blue animate-pulse" />
-            <span>当前时间线: 2026.06.02 (星期二)</span>
+            <span>当前时间线: {currentYear}.{String(currentMonthNum).padStart(2,'0')}.{String(currentDayNum).padStart(2,'0')} ({daysOfWeek.find(d => d.isToday)?.text || '本周'})</span>
           </div>
         </div>
 
@@ -1345,7 +1388,7 @@ export default function TechoGrid({
                   className={`col-span-2 border-r last:border-r-0 border-[#eae6d8] py-1.5 px-1 flex flex-col justify-between items-center cursor-pointer transition-all focus:outline-none select-none text-center relative ${heatBgClass} ${
                     isSelected ? 'ring-2 ring-inset ring-amber-500 font-extrabold bg-[#fffbeb]' : ''
                   }`}
-                  title={`点击速查 6月${idx + 1}日 (${day.text})\n包含 ${taskCount} 个计划时段，${hasNote ? '已' : '未'}录入日记便签。`}
+                  title={`点击速查 ${daysOfWeek[idx]._date.getMonth()+1}月${daysOfWeek[idx]._date.getDate()}日 (${day.text})\n包含 ${taskCount} 个计划时段，${hasNote ? '已' : '未'}录入日记便签。`}
                 >
                   {/* Miniature Date indicator */}
                   <div className="w-full flex justify-between items-center text-[8.5px] text-gray-400 font-mono scale-95 origin-top mb-1">
@@ -1407,7 +1450,7 @@ export default function TechoGrid({
                         ? 'bg-techo-pink/5 hover:bg-techo-pink/10' 
                         : 'hover:bg-amber-50/30'
                   }`}
-                  title={`点击查看/编辑: 6月${idx + 1}日的今日笔记`}
+                  title={`点击查看/编辑: ${daysOfWeek[idx]._date.getMonth()+1}月${daysOfWeek[idx]._date.getDate()}日的今日笔记`}
                 >
                   <div className="flex items-center gap-1">
                     <span className={`text-[10px] font-sans font-medium px-1 rounded-sm ${
