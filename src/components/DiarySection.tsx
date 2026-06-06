@@ -208,7 +208,16 @@ const renderMarkdown = (text: string, highlightedId?: string | null) => {
           );
         }
 
-        // 7. Plain Paragraph (if empty line, return clean spacer)
+        // 7. Images ![alt](src)
+        const imgMatch = trimmedLine.match(/^!\[([^\]]*)\]\(([^)]+)\)$/);
+        if (imgMatch) {
+          return (
+            <img key={lineKey} src={imgMatch[2]} alt={imgMatch[1]}
+              className="max-w-full rounded-md border border-[#eae6d8] my-2 max-h-80 object-contain" />
+          );
+        }
+
+        // 8. Plain Paragraph (if empty line, return clean spacer)
         if (trimmedLine === '') {
           return <div key={lineKey} className="h-2.5" />;
         }
@@ -1168,6 +1177,7 @@ export default function DiarySection({
   
   // States
   const inspirationRef = React.useRef<InspirationCapsuleRef>(null);
+  const textareaRef = React.useRef<HTMLTextAreaElement>(null);
 
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(
     diaryNotes.length > 0 ? diaryNotes[0].id : null
@@ -1399,6 +1409,38 @@ export default function DiarySection({
     setSelectedNoteId(null);
     setIsEditing(true);
     setIsPreview(false);
+  };
+
+  // Rich text toolbar helpers
+  const insertMarkdown = (before: string, after = '') => {
+    const ta = textareaRef.current;
+    if (!ta) return;
+    const start = ta.selectionStart;
+    const end = ta.selectionEnd;
+    const selected = editContent.slice(start, end);
+    const newContent = editContent.slice(0, start) + before + selected + after + editContent.slice(end);
+    setEditContent(newContent);
+    setTimeout(() => {
+      ta.focus();
+      ta.selectionStart = start + before.length;
+      ta.selectionEnd = start + before.length + selected.length;
+    }, 0);
+  };
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) { alert('图片不超过 2MB'); return; }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const src = reader.result as string;
+      const ta = textareaRef.current;
+      const pos = ta ? ta.selectionStart : editContent.length;
+      const insertion = `\n![图片](${src})\n`;
+      setEditContent(editContent.slice(0, pos) + insertion + editContent.slice(pos));
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
   };
 
   // Save Note
@@ -2385,7 +2427,31 @@ export default function DiarySection({
                     </div>
                   ) : (
                     <div className="space-y-2 flex-grow flex flex-col">
+                      {/* Rich text toolbar */}
+                      <div className="flex items-center gap-1 flex-wrap bg-[#f9f8f4] border border-[#d6cfbe] rounded px-2 py-1">
+                        {[
+                          { label: 'B', title: '加粗', action: () => insertMarkdown('**', '**') },
+                          { label: 'I', title: '斜体', action: () => insertMarkdown('*', '*') },
+                          { label: 'H1', title: '一级标题', action: () => insertMarkdown('# ') },
+                          { label: 'H2', title: '二级标题', action: () => insertMarkdown('## ') },
+                          { label: '>', title: '引用', action: () => insertMarkdown('> ') },
+                          { label: '—', title: '分割线', action: () => insertMarkdown('\n---\n') },
+                          { label: '• ', title: '无序列表', action: () => insertMarkdown('- ') },
+                        ].map(btn => (
+                          <button key={btn.label} type="button" title={btn.title} onClick={btn.action}
+                            className="px-2 py-0.5 text-[11px] font-bold rounded hover:bg-[#eae6d8] text-[#6e685a] transition-colors cursor-pointer">
+                            {btn.label}
+                          </button>
+                        ))}
+                        <div className="h-4 w-px bg-[#d6cfbe] mx-1" />
+                        <label title="插入图片 (≤2MB)" className="px-2 py-0.5 text-[11px] font-bold rounded hover:bg-[#eae6d8] text-[#6e685a] transition-colors cursor-pointer flex items-center gap-1">
+                          <span>🖼</span>
+                          <span>图片</span>
+                          <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
+                        </label>
+                      </div>
                       <textarea
+                        ref={textareaRef}
                         placeholder="写下今日的故事、开发随感、技术复盘或生活感悟..."
                         value={editContent}
                         onChange={(e) => setEditContent(e.target.value)}

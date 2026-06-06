@@ -320,7 +320,7 @@ export default function TechoGrid({
     };
   });
 
-  // Week number (ISO)
+  // Week number (ISO) — use the target week's monday, not today
   const getISOWeek = (d: Date) => {
     const date = new Date(d);
     date.setHours(0, 0, 0, 0);
@@ -328,7 +328,7 @@ export default function TechoGrid({
     const week1 = new Date(date.getFullYear(), 0, 4);
     return 1 + Math.round(((date.getTime() - week1.getTime()) / 86400000 - 3 + ((week1.getDay() + 6) % 7)) / 7);
   };
-  const weekNumber = getISOWeek(today);
+  const weekNumber = getISOWeek(monday);
 
   // Week range label (e.g. "6月2日 – 8日" or cross-month "5月30日 – 6月5日")
   const mondayDate = daysOfWeek[0]._date;
@@ -1077,7 +1077,10 @@ export default function TechoGrid({
           </div>
           <div className="flex items-center gap-2 text-xs text-[#827b68] font-medium bg-white/70 border border-[#e3dfd3] px-2 py-1 rounded">
             <Clock size={12} className="text-techo-blue animate-pulse" />
-            <span>当前时间线: {currentYear}.{String(currentMonthNum).padStart(2,'0')}.{String(currentDayNum).padStart(2,'0')} ({daysOfWeek.find(d => d.isToday)?.text || '本周'})</span>
+            {weekOffset === 0
+              ? <span>当前时间线: {currentYear}.{String(currentMonthNum).padStart(2,'0')}.{String(currentDayNum).padStart(2,'0')} ({daysOfWeek.find(d => d.isToday)?.text || '本周'})</span>
+              : <span>计划周: {weekRangeLabel} &nbsp;·&nbsp; 第 {weekNumber} 周</span>
+            }
           </div>
         </div>
 
