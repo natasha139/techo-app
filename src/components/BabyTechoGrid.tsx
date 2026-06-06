@@ -224,7 +224,7 @@ export default function BabyTechoGrid({
         </button>
       </div>
 
-      <div className="bg-white border border-t-0 border-[#d3cfc3] rounded-b-lg overflow-hidden">
+      <div className="bg-white border border-t-0 border-[#d3cfc3] rounded-b-lg overflow-hidden print:overflow-visible">
         {/* Day headers */}
         <div className="grid grid-cols-15 border-b border-[#eae6d8] bg-[#fdf6f0] sticky top-0 z-10">
           <div className="col-span-1 border-r border-[#eae6d8] py-2 text-[10px] text-center font-bold text-[#8c8577]">时间</div>
@@ -242,7 +242,7 @@ export default function BabyTechoGrid({
         </div>
 
         {/* Grid */}
-        <div ref={hourScrollRef} className="overflow-y-auto max-h-[480px]">
+        <div ref={hourScrollRef} className="overflow-y-auto max-h-[480px] print:overflow-visible print:max-h-none">
           <div className="grid grid-cols-15">
             {/* Hour labels */}
             <div className="col-span-1 border-r border-[#eae6d8]">
