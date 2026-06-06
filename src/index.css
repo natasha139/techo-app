@@ -1,0 +1,96 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&family=Lora:ital,wght@0,400;0,600;1,400&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", "Helvetica Neue", Arial, sans-serif;
+  --font-display: "Outfit", sans-serif;
+  --font-mono: "Fira Code", monospace;
+  --font-serif: "Lora", Georgia, serif;
+
+  /* Custom Japan stationery colors */
+  --color-techo-cream: #fbfaf5;
+  --color-techo-cream-darker: #f5f3e9;
+  --color-techo-grid: rgba(220, 215, 201, 0.4);
+  --color-techo-blue: #7090b0;
+  --color-techo-blue-light: #f0f4f8;
+  --color-techo-pink: #d97d8c;
+  --color-techo-orange: #e09453;
+  --color-techo-teal: #4b8f8c;
+}
+
+/* Custom Kokuyo Paper Grid Pattern */
+.techo-grid-bg {
+  background-image: 
+    linear-gradient(to right, var(--color-techo-grid) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--color-techo-grid) 1px, transparent 1px);
+  background-size: 18px 18px;
+}
+
+/* Vertical schedule axis */
+.timeline-hour-grid {
+  background-image: linear-gradient(to bottom, var(--color-techo-grid) 1px, transparent 1px);
+  background-size: 100% 40px; /* 40px per hour box */
+}
+
+/* Notebook Perforations (punched binder holes) */
+.notebook-binder-ring {
+  background: radial-gradient(circle, #e5e5e5 35%, transparent 40%),
+              radial-gradient(circle, #ffffff 45%, #d1d1d1 60%, transparent 65%);
+}
+
+.notebook-perforation {
+  background-image: radial-gradient(circle, #e2dfd5 40%, transparent 45%);
+  background-size: 12px 12px;
+}
+
+/* Custom Scrollbar for Hand Planner feel */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #fbfaf5;
+}
+::-webkit-scrollbar-thumb {
+  background: #d4cfc3;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #c3beaf;
+}
+
+@media print {
+  body > * { display: none !important; }
+  #__print_frame__ { display: block !important; }
+}
+
+#__print_frame__ { display: none; }
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes cellPopIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.9) translateY(4px);
+  }
+  60% {
+    transform: scale(1.02) translateY(-1px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-cell-pop {
+  animation: cellPopIn 0.28s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  transform-origin: center center;
+}
+
+

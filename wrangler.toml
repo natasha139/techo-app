@@ -1,0 +1,18 @@
+name = "techo-app"
+pages_build_output_dir = "dist"
+compatibility_date = "2025-01-01"
+
+[[d1_databases]]
+binding = "SELF_GROWTH_DB"
+database_name = "techo-self-growth"
+database_id = "60dce98f-5084-4b6b-bfa1-4434a022de59"
+
+[[d1_databases]]
+binding = "PARENTING_DB"
+database_name = "techo-parenting"
+database_id = "a5f58c51-9028-4060-8347-96168802f311"
+
+[[d1_databases]]
+binding = "GENERAL_DB"
+database_name = "techo-general"
+database_id = "dc86d6a1-5936-487c-80b2-a01aed79e43c"

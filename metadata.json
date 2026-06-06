@@ -1,0 +1,6 @@
+{
+  "name": "自我手帐",
+  "description": "基于网格与极致日本文具风格的自我成长手帐应用，包含24小时周计划时间轴、愿望清单与技能树、工作项目目标、爱好影单收集、自媒体运营与育儿日志，支持一键生成并导出 Cloudflare D1 SQLite SQL 模式及本地 D1 同步模拟。",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
