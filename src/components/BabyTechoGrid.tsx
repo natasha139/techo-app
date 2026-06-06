@@ -193,7 +193,7 @@ export default function BabyTechoGrid({
 
   const printRef = useRef<HTMLDivElement>(null);
   const handlePrint = useReactToPrint({
-    content: () => printRef.current,
+    contentRef: printRef,
     documentTitle: `${childName}周计划`,
     pageStyle: `
       @page { size: A4 landscape; margin: 10mm; }
