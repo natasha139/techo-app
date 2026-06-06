@@ -191,21 +191,23 @@ export default function BabyTechoGrid({
     setEditingNoteDay(null);
   };
 
-  const printRef = useRef<HTMLDivElement>(null);
-  const handlePrint = useReactToPrint({
-    contentRef: printRef,
-    documentTitle: `${childName}周计划`,
-    pageStyle: `
-      @page { size: A4 landscape; margin: 10mm; }
-      @media print {
-        body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-        .no-print { display: none !important; }
-      }
-    `,
-  });
+  const handlePrint = () => {
+    const el = document.getElementById('baby-print-target');
+    if (!el) return;
+    const clone = el.cloneNode(true) as HTMLElement;
+    clone.id = '__baby_print_clone__';
+    clone.style.cssText = 'position:fixed;top:0;left:0;width:100%;background:white;z-index:99999;';
+    document.body.appendChild(clone);
+    document.body.classList.add('printing-baby');
+    window.print();
+    setTimeout(() => {
+      document.body.classList.remove('printing-baby');
+      clone.remove();
+    }, 1000);
+  };
 
   return (
-    <div className="flex flex-col gap-0" ref={printRef}>
+    <div className="flex flex-col gap-0" id="baby-print-target">
       {/* Header */}
       <div className="flex items-center justify-between px-3 py-2 bg-[#fdf2f8] border border-pink-200 rounded-t-lg">
         <div className="flex items-center gap-2">
