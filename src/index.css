@@ -69,6 +69,8 @@
 @media print {
   body.printing-baby > * { display: none !important; }
   body.printing-baby #__baby_print_clone__ { display: block !important; }
+  body.printing-baby #__baby_print_clone__ { transform-origin: top left; zoom: 0.75; }
+  @page { size: A4 portrait; margin: 8mm; }
 }
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(8px); }
