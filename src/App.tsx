@@ -332,25 +332,27 @@ export default function App() {
   const [editingTitle, setEditingTitle] = useState(false);
   const [editingSubtitle, setEditingSubtitle] = useState(false);
   const [isCustomizerOpen, setIsCustomizerOpen] = useState(false);
+  const [coverBg, setCoverBg] = useState<string>('');
+  const [editionLabel, setEditionLabel] = useState<string>('');
 
   const handleThemeChange = (themeId: string) => {
     setActiveThemeId(themeId);
-    localStorage.setItem('techo_theme_id', themeId);
+    saveSetting('theme_id', themeId);
   };
 
   const handleFontChange = (font: string) => {
     setFontFamily(font);
-    localStorage.setItem('techo_font_family', font);
+    saveSetting('font_family', font);
   };
 
   const handleGridOpacityChange = (opacity: number) => {
     setGridOpacity(opacity);
-    localStorage.setItem('techo_grid_opacity', String(opacity));
+    saveSetting('grid_opacity', String(opacity));
   };
 
   const handleUsernameChange = (name: string) => {
     setUsername(name.slice(0, 15) || 'Natasha');
-    localStorage.setItem('techo_username', name);
+    saveSetting('username', name.slice(0, 15) || 'Natasha');
   };
 
   // -- MAIN CONTENT TAB SELECTOR --
@@ -408,7 +410,7 @@ export default function App() {
         wishData, skillData, workData, hobbyData, shData, diaryData,
         milestoneData, childLogData, childDiaryData,
         cellData, habitData, summaryData, financeData,
-        inboxData, fitnessData, parentingResourceData,
+        inboxData, fitnessData, parentingResourceData, settingsData,
       ] = await Promise.all([
         api.wishes.list(sc),
         api.skills.list(sc),
@@ -426,6 +428,7 @@ export default function App() {
         api.inbox.list(sc),
         api.fitness.list(sc),
         api.parentingResources.list(sc),
+        api.settings.getAll(sc),
       ]);
 
       setWishes(wishData.map((w: any) => ({ id: w.id, order: w.ord, content: w.content, isCompleted: w.is_completed === 1, category: w.category })));
@@ -463,6 +466,20 @@ export default function App() {
       }
 
       pushLog('success', `✅ 全部数据加载完成。wishes:${wishData.length} skills:${skillData.length} habits:${habitData.length}`);
+
+      // Apply persisted appearance settings from D1
+      if (settingsData) {
+        if (settingsData.app_title) setAppTitle(settingsData.app_title);
+        if (settingsData.app_subtitle) setAppSubtitle(settingsData.app_subtitle);
+        if (settingsData.username) setUsername(settingsData.username);
+        if (settingsData.theme_id) setActiveThemeId(settingsData.theme_id);
+        if (settingsData.font_family) setFontFamily(settingsData.font_family);
+        if (settingsData.grid_opacity !== undefined) setGridOpacity(Number(settingsData.grid_opacity));
+        if (settingsData.avatar_url) setAvatarUrl(settingsData.avatar_url);
+        if (settingsData.custom_quote) setCustomQuote(settingsData.custom_quote);
+        if (settingsData.cover_bg) setCoverBg(settingsData.cover_bg);
+        if (settingsData.edition_label) setEditionLabel(settingsData.edition_label);
+      }
     } catch (e: any) {
       pushLog('error', `加载失败: ${e.message}`);
     } finally {
@@ -487,6 +504,11 @@ export default function App() {
       pushLog('error', `D1 ${table} 写入失败: ${e.message}`);
     }
   }, [pushLog]);
+
+  const saveSetting = useCallback((key: string, value: string) => {
+    if (!syncCode) return;
+    api.settings.set(syncCode, { [key]: value }).catch(() => {});
+  }, [syncCode]);
 
   // -- TRIGGERS CRUD MUTATIONS --
 
@@ -863,7 +885,6 @@ export default function App() {
   // -- AUTH HANDLER --
   const handleSyncLogin = (code: string, uname: string) => {
     localStorage.setItem('techo_sync_code', code);
-    localStorage.setItem('techo_username', uname);
     setUsername(uname);
     setSyncCode(code);
   };
@@ -926,7 +947,7 @@ export default function App() {
                 reader.onload = ev => {
                   const url = ev.target?.result as string;
                   setAvatarUrl(url);
-                  localStorage.setItem('techo_avatar', url);
+                  saveSetting('avatar_url', url);
                 };
                 reader.readAsDataURL(file);
               }} />
@@ -935,8 +956,8 @@ export default function App() {
               <div className="flex items-center gap-2">
                 {editingTitle ? (
                   <input autoFocus value={appTitle} onChange={e => setAppTitle(e.target.value)}
-                    onBlur={() => { setEditingTitle(false); localStorage.setItem('techo_app_title', appTitle); }}
-                    onKeyDown={e => { if (e.key === 'Enter') { setEditingTitle(false); localStorage.setItem('techo_app_title', appTitle); } }}
+                    onBlur={() => { setEditingTitle(false); saveSetting('app_title', appTitle); }}
+                    onKeyDown={e => { if (e.key === 'Enter') { setEditingTitle(false); saveSetting('app_title', appTitle); } }}
                     className="font-display font-extrabold text-lg text-[#3c3830] tracking-wide bg-transparent border-b border-techo-teal outline-none w-36" />
                 ) : (
                   <h1 className="font-display font-extrabold text-lg text-[#3c3830] tracking-wide cursor-text hover:text-techo-teal transition-colors"
@@ -945,8 +966,8 @@ export default function App() {
               </div>
               {editingSubtitle ? (
                 <input autoFocus value={appSubtitle} onChange={e => setAppSubtitle(e.target.value)}
-                  onBlur={() => { setEditingSubtitle(false); localStorage.setItem('techo_app_subtitle', appSubtitle); }}
-                  onKeyDown={e => { if (e.key === 'Enter') { setEditingSubtitle(false); localStorage.setItem('techo_app_subtitle', appSubtitle); } }}
+                  onBlur={() => { setEditingSubtitle(false); saveSetting('app_subtitle', appSubtitle); }}
+                  onKeyDown={e => { if (e.key === 'Enter') { setEditingSubtitle(false); saveSetting('app_subtitle', appSubtitle); } }}
                   className="text-[10px] text-[#8e8574] font-medium tracking-wide bg-transparent border-b border-techo-teal/50 outline-none w-72" />
               ) : (
                 <p className="text-[10px] text-[#8e8574] font-medium tracking-wide cursor-text hover:text-techo-teal transition-colors"
@@ -1060,7 +1081,6 @@ export default function App() {
                   <button
                     onClick={() => {
                       localStorage.removeItem('techo_sync_code');
-                      localStorage.removeItem('techo_username');
                       setSyncCode('');
                       setIsProfileOpen(false);
                     }}
@@ -1236,8 +1256,8 @@ export default function App() {
                   if (e.key === 'Enter') {
                     const text = quoteInput.trim();
                     setCustomQuote(text);
-                    if (text) localStorage.setItem('techo_quote', JSON.stringify({ date: new Date().toISOString().slice(0,10), text }));
-                    else localStorage.removeItem('techo_quote');
+                    if (text) saveSetting('custom_quote', text);
+                    else api.settings.delete(syncCode, 'custom_quote').catch(() => {});
                     setEditingQuote(false);
                   }
                   if (e.key === 'Escape') setEditingQuote(false);
@@ -1248,8 +1268,8 @@ export default function App() {
               <button onClick={() => {
                 const text = quoteInput.trim();
                 setCustomQuote(text);
-                if (text) localStorage.setItem('techo_quote', JSON.stringify({ date: new Date().toISOString().slice(0,10), text }));
-                else localStorage.removeItem('techo_quote');
+                if (text) saveSetting('custom_quote', text);
+                else api.settings.delete(syncCode, 'custom_quote').catch(() => {});
                 setEditingQuote(false);
               }} className="text-[10px] px-2 py-1 bg-techo-teal text-white rounded cursor-pointer font-bold">保存</button>
               <button onClick={() => setEditingQuote(false)} className="text-[10px] px-2 py-1 border border-gray-200 rounded cursor-pointer text-gray-400">取消</button>
@@ -1263,7 +1283,7 @@ export default function App() {
                 title="自定义今日语句"
               >✏️ 自定义</button>
               {customQuote && (
-                <button onClick={() => { setCustomQuote(''); localStorage.removeItem('techo_quote'); }}
+                <button onClick={() => { setCustomQuote(''); api.settings.delete(syncCode, 'custom_quote').catch(() => {}); }}
                   className="shrink-0 text-[10px] text-gray-300 hover:text-red-400 transition-colors cursor-pointer px-1"
                   title="恢复每日自动语句">↺</button>
               )}
@@ -1495,6 +1515,9 @@ export default function App() {
                     weeklySummary={weeklySummary}
                     onSaveWeeklySummary={handleSaveWeeklySummary}
                     weekOffset={weekOffset}
+                    onSaveSetting={saveSetting}
+                    initialCoverBg={coverBg}
+                    initialEditionLabel={editionLabel}
                   />
                 )}
 

@@ -61,6 +61,7 @@ async function initSchemas(env) {
     `CREATE TABLE IF NOT EXISTS weekly_summary (id TEXT PRIMARY KEY, sync_code TEXT NOT NULL, theme TEXT NOT NULL DEFAULT '', priorities TEXT NOT NULL DEFAULT '[]', practice TEXT NOT NULL DEFAULT '', reminder TEXT NOT NULL DEFAULT '', review_question TEXT NOT NULL DEFAULT '', today_notes TEXT NOT NULL DEFAULT '{}', updated_at TEXT NOT NULL)`,
     `CREATE TABLE IF NOT EXISTS financial_metrics (id TEXT PRIMARY KEY, sync_code TEXT NOT NULL, month TEXT NOT NULL DEFAULT '', traffic INTEGER NOT NULL DEFAULT 0, revenue INTEGER NOT NULL DEFAULT 0, expense INTEGER NOT NULL DEFAULT 0, note TEXT NOT NULL DEFAULT '', updated_at TEXT NOT NULL)`,
     `CREATE TABLE IF NOT EXISTS fitness_logs (id TEXT PRIMARY KEY, sync_code TEXT NOT NULL, date TEXT NOT NULL DEFAULT '', weight REAL, exercise TEXT, duration INTEGER, calories INTEGER, meals TEXT, note TEXT, updated_at TEXT NOT NULL)`,
+    `CREATE TABLE IF NOT EXISTS settings (sync_code TEXT NOT NULL, key TEXT NOT NULL, value TEXT NOT NULL DEFAULT '', updated_at TEXT NOT NULL, PRIMARY KEY (sync_code, key))`,
   ];
   for (const sql of gTables) await g.exec(sql);
 }
@@ -378,6 +379,28 @@ async function handleGeneral(request, env, path, method, syncCode) {
     if (method === 'DELETE') {
       const id = new URL(request.url).searchParams.get('id');
       await db.prepare('DELETE FROM fitness_logs WHERE id = ? AND sync_code = ?').bind(id, syncCode).run();
+      return json({ ok: true });
+    }
+  }
+
+  if (path === '/api/general/settings') {
+    if (method === 'GET') {
+      const { results } = await db.prepare('SELECT key, value FROM settings WHERE sync_code = ?').bind(syncCode).all();
+      const out = {};
+      for (const r of results) out[r.key] = r.value;
+      return json(out);
+    }
+    if (method === 'POST') {
+      const b = await request.json();
+      const stmts = Object.entries(b).map(([k, v]) =>
+        db.prepare('INSERT OR REPLACE INTO settings (sync_code, key, value, updated_at) VALUES (?, ?, ?, ?)').bind(syncCode, k, String(v), now())
+      );
+      if (stmts.length > 0) await db.batch(stmts);
+      return json({ ok: true });
+    }
+    if (method === 'DELETE') {
+      const key = new URL(request.url).searchParams.get('key');
+      await db.prepare('DELETE FROM settings WHERE sync_code = ? AND key = ?').bind(syncCode, key).run();
       return json({ ok: true });
     }
   }

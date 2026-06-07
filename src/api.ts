@@ -117,4 +117,9 @@ export const api = {
     upsert: (sc: string, item: any) => apiFetch('/api/parenting/resources', { method: 'POST', body: JSON.stringify(item) }, sc),
     delete: (sc: string, id: string) => apiFetch(`/api/parenting/resources?id=${id}`, { method: 'DELETE' }, sc),
   },
+  settings: {
+    getAll: (sc: string) => apiFetch('/api/general/settings', {}, sc),
+    set: (sc: string, data: Record<string, string>) => apiFetch('/api/general/settings', { method: 'POST', body: JSON.stringify(data) }, sc),
+    delete: (sc: string, key: string) => apiFetch(`/api/general/settings?key=${encodeURIComponent(key)}`, { method: 'DELETE' }, sc),
+  },
 };

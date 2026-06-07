@@ -43,6 +43,9 @@ interface TechoGridProps {
   weeklySummary: WeeklySummary;
   onSaveWeeklySummary: (summary: WeeklySummary) => void;
   weekOffset?: number;
+  onSaveSetting?: (key: string, value: string) => void;
+  initialCoverBg?: string;
+  initialEditionLabel?: string;
 }
 
 const colorPresets = [
@@ -283,12 +286,15 @@ export default function TechoGrid({
   weeklySummary,
   onSaveWeeklySummary,
   weekOffset = 0,
+  onSaveSetting,
+  initialCoverBg = '',
+  initialEditionLabel = '',
 }: TechoGridProps) {
 
   // Cover card: background image + edition label editable
-  const [coverBg, setCoverBg] = React.useState<string>(() => localStorage.getItem('techo_cover_bg') || '');
+  const [coverBg, setCoverBg] = React.useState<string>(initialCoverBg);
   const [editingEdition, setEditingEdition] = React.useState(false);
-  const [editionLabel, setEditionLabel] = React.useState<string>(() => localStorage.getItem('techo_edition_label') || '');
+  const [editionLabel, setEditionLabel] = React.useState<string>(initialEditionLabel);
   // Dynamic current week calculation
   const today = new Date();
   const currentYear = String(today.getFullYear());
@@ -767,7 +773,7 @@ export default function TechoGrid({
               reader.onload = ev => {
                 const url = ev.target?.result as string;
                 setCoverBg(url);
-                localStorage.setItem('techo_cover_bg', url);
+                onSaveSetting?.('cover_bg', url);
               };
               reader.readAsDataURL(file);
             }} />
@@ -776,7 +782,7 @@ export default function TechoGrid({
           {/* Clear bg button */}
           {coverBg && (
             <button
-              onClick={() => { setCoverBg(''); localStorage.removeItem('techo_cover_bg'); }}
+              onClick={() => { setCoverBg(''); onSaveSetting?.('cover_bg', ''); }}
               className="absolute top-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity bg-black/40 hover:bg-black/60 text-white rounded-md px-1.5 py-0.5 text-[9px] font-bold cursor-pointer"
               title="移除背景图"
             >✕</button>
@@ -794,8 +800,8 @@ export default function TechoGrid({
               autoFocus
               value={editionLabel}
               onChange={e => setEditionLabel(e.target.value)}
-              onBlur={() => { setEditingEdition(false); localStorage.setItem('techo_edition_label', editionLabel); }}
-              onKeyDown={e => { if (e.key === 'Enter' || e.key === 'Escape') { setEditingEdition(false); localStorage.setItem('techo_edition_label', editionLabel); } }}
+              onBlur={() => { setEditingEdition(false); onSaveSetting?.('edition_label', editionLabel); }}
+              onKeyDown={e => { if (e.key === 'Enter' || e.key === 'Escape') { setEditingEdition(false); onSaveSetting?.('edition_label', editionLabel); } }}
               placeholder={`${username}'s Edition`}
               className="mt-1.5 text-[10px] font-mono font-bold text-center bg-white/80 border border-white/60 rounded-full px-2 py-0.5 outline-none w-32"
             />
