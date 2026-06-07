@@ -224,6 +224,10 @@ export default function App() {
     return val ? parseInt(val) : 40;
   });
   const [username, setUsername] = useState<string>(() => localStorage.getItem('techo_username') || 'Natasha');
+  const [appTitle, setAppTitle] = useState<string>(() => localStorage.getItem('techo_app_title') || '自我手帐');
+  const [appSubtitle, setAppSubtitle] = useState<string>(() => localStorage.getItem('techo_app_subtitle') || 'Self-Growth Hand Planner • inspired by Kokuyo');
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [editingSubtitle, setEditingSubtitle] = useState(false);
   const [isCustomizerOpen, setIsCustomizerOpen] = useState(false);
 
   const handleThemeChange = (themeId: string) => {
@@ -807,12 +811,28 @@ export default function App() {
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="font-display font-extrabold text-lg text-[#3c3830] tracking-wide">自我手帐</h1>
+                {editingTitle ? (
+                  <input autoFocus value={appTitle} onChange={e => setAppTitle(e.target.value)}
+                    onBlur={() => { setEditingTitle(false); localStorage.setItem('techo_app_title', appTitle); }}
+                    onKeyDown={e => { if (e.key === 'Enter') { setEditingTitle(false); localStorage.setItem('techo_app_title', appTitle); } }}
+                    className="font-display font-extrabold text-lg text-[#3c3830] tracking-wide bg-transparent border-b border-techo-teal outline-none w-36" />
+                ) : (
+                  <h1 className="font-display font-extrabold text-lg text-[#3c3830] tracking-wide cursor-text hover:text-techo-teal transition-colors"
+                    onDoubleClick={() => setEditingTitle(true)} title="双击编辑">{appTitle}</h1>
+                )}
                 <span className="text-[10px] text-techo-teal font-extrabold tracking-wider uppercase border border-techo-teal/30 bg-techo-teal/5 px-1.5 py-0.5 rounded-sm">
                   D1 Integrated
                 </span>
               </div>
-              <p className="text-[10px] text-[#8e8574] font-medium tracking-wide">Self-Growth Hand Planner • inspired by Kokuyo</p>
+              {editingSubtitle ? (
+                <input autoFocus value={appSubtitle} onChange={e => setAppSubtitle(e.target.value)}
+                  onBlur={() => { setEditingSubtitle(false); localStorage.setItem('techo_app_subtitle', appSubtitle); }}
+                  onKeyDown={e => { if (e.key === 'Enter') { setEditingSubtitle(false); localStorage.setItem('techo_app_subtitle', appSubtitle); } }}
+                  className="text-[10px] text-[#8e8574] font-medium tracking-wide bg-transparent border-b border-techo-teal/50 outline-none w-72" />
+              ) : (
+                <p className="text-[10px] text-[#8e8574] font-medium tracking-wide cursor-text hover:text-techo-teal transition-colors"
+                  onDoubleClick={() => setEditingSubtitle(true)} title="双击编辑">{appSubtitle}</p>
+              )}
             </div>
           </div>
 
