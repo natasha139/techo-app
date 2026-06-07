@@ -875,7 +875,7 @@ export default function App() {
         )}
         <header className="bg-white border-2 border-[#d3cfc3] rounded-lg px-4 py-3 shadow-xs flex flex-col md:flex-row items-center justify-between gap-3 relative">
           {/* Subtle physical notebook spine binding effect on the left rail */}
-          <div className="absolute top-0 bottom-0 left-0 w-2.5 flex flex-col justify-between py-1 bg-[#d5cfbe] border-r border-[#bebaaa]">
+          <div className="absolute top-0 bottom-0 left-0 w-2.5 flex flex-col justify-between py-1 bg-[#d5cfbe] border-r border-[#bebaaa] rounded-l-lg overflow-hidden">
             {Array.from({ length: 6 }).map((_, i) => (
               <div key={i} className="w-1.5 h-1.5 rounded-full bg-white mx-auto shadow-inner" />
             ))}
@@ -896,9 +896,6 @@ export default function App() {
                   <h1 className="font-display font-extrabold text-lg text-[#3c3830] tracking-wide cursor-text hover:text-techo-teal transition-colors"
                     onDoubleClick={() => setEditingTitle(true)} title="双击编辑">{appTitle}</h1>
                 )}
-                <span className="text-[10px] text-techo-teal font-extrabold tracking-wider uppercase border border-techo-teal/30 bg-techo-teal/5 px-1.5 py-0.5 rounded-sm">
-                  D1 Integrated
-                </span>
               </div>
               {editingSubtitle ? (
                 <input autoFocus value={appSubtitle} onChange={e => setAppSubtitle(e.target.value)}
