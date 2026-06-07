@@ -51,6 +51,8 @@ async function initSchemas(env) {
     `CREATE TABLE IF NOT EXISTS child_logs (id TEXT PRIMARY KEY, sync_code TEXT NOT NULL, time TEXT NOT NULL DEFAULT '', type TEXT NOT NULL DEFAULT 'notes', spec TEXT NOT NULL DEFAULT '', notes TEXT NOT NULL DEFAULT '', updated_at TEXT NOT NULL)`,
     `CREATE TABLE IF NOT EXISTS child_diaries (id TEXT PRIMARY KEY, sync_code TEXT NOT NULL, date TEXT NOT NULL DEFAULT '', title TEXT NOT NULL DEFAULT '', content TEXT NOT NULL DEFAULT '', mood TEXT, height TEXT, weight TEXT, updated_at TEXT NOT NULL)`,
     `CREATE TABLE IF NOT EXISTS parenting_resources (id TEXT PRIMARY KEY, sync_code TEXT NOT NULL, name TEXT NOT NULL DEFAULT '', type TEXT NOT NULL DEFAULT 'app', subject TEXT, age_range TEXT, rating INTEGER NOT NULL DEFAULT 0, notes TEXT, url TEXT, updated_at TEXT NOT NULL)`,
+    `CREATE TABLE IF NOT EXISTS child_goals (id TEXT PRIMARY KEY, sync_code TEXT NOT NULL, scope TEXT NOT NULL DEFAULT 'week', text TEXT NOT NULL DEFAULT '', is_done INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL, updated_at TEXT NOT NULL)`,
+    `CREATE TABLE IF NOT EXISTS growth_links (id TEXT PRIMARY KEY, sync_code TEXT NOT NULL, title TEXT NOT NULL DEFAULT '', url TEXT NOT NULL DEFAULT '', note TEXT NOT NULL DEFAULT '', created_at TEXT NOT NULL, updated_at TEXT NOT NULL)`,
   ];
   for (const sql of pTables) await p.exec(sql);
 
@@ -62,6 +64,7 @@ async function initSchemas(env) {
     `CREATE TABLE IF NOT EXISTS financial_metrics (id TEXT PRIMARY KEY, sync_code TEXT NOT NULL, month TEXT NOT NULL DEFAULT '', traffic INTEGER NOT NULL DEFAULT 0, revenue INTEGER NOT NULL DEFAULT 0, expense INTEGER NOT NULL DEFAULT 0, note TEXT NOT NULL DEFAULT '', updated_at TEXT NOT NULL)`,
     `CREATE TABLE IF NOT EXISTS fitness_logs (id TEXT PRIMARY KEY, sync_code TEXT NOT NULL, date TEXT NOT NULL DEFAULT '', weight REAL, exercise TEXT, duration INTEGER, calories INTEGER, meals TEXT, note TEXT, updated_at TEXT NOT NULL)`,
     `CREATE TABLE IF NOT EXISTS settings (sync_code TEXT NOT NULL, key TEXT NOT NULL, value TEXT NOT NULL DEFAULT '', updated_at TEXT NOT NULL, PRIMARY KEY (sync_code, key))`,
+    `CREATE TABLE IF NOT EXISTS media_notes (id TEXT PRIMARY KEY, sync_code TEXT NOT NULL, text TEXT NOT NULL DEFAULT '', created_at TEXT NOT NULL, updated_at TEXT NOT NULL)`,
   ];
   for (const sql of gTables) await g.exec(sql);
 }
@@ -284,10 +287,46 @@ async function handleParenting(request, env, path, method, syncCode) {
     }
   }
 
+  if (path === '/api/parenting/goals') {
+    if (method === 'GET') {
+      const scope = new URL(request.url).searchParams.get('scope');
+      const q = scope
+        ? db.prepare('SELECT * FROM child_goals WHERE sync_code = ? AND scope = ? ORDER BY created_at ASC').bind(syncCode, scope)
+        : db.prepare('SELECT * FROM child_goals WHERE sync_code = ? ORDER BY created_at ASC').bind(syncCode);
+      const { results } = await q.all();
+      return json(results.map(r => ({ id: r.id, scope: r.scope, text: r.text, isDone: r.is_done === 1, createdAt: r.created_at })));
+    }
+    if (method === 'POST') {
+      const b = await request.json();
+      await db.prepare('INSERT OR REPLACE INTO child_goals (id, sync_code, scope, text, is_done, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)').bind(b.id, syncCode, b.scope ?? 'week', b.text ?? '', b.isDone ? 1 : 0, b.createdAt || now(), now()).run();
+      return json({ ok: true });
+    }
+    if (method === 'DELETE') {
+      const id = new URL(request.url).searchParams.get('id');
+      await db.prepare('DELETE FROM child_goals WHERE id = ? AND sync_code = ?').bind(id, syncCode).run();
+      return json({ ok: true });
+    }
+  }
+
+  if (path === '/api/parenting/growth-links') {
+    if (method === 'GET') {
+      const { results } = await db.prepare('SELECT * FROM growth_links WHERE sync_code = ? ORDER BY created_at DESC').bind(syncCode).all();
+      return json(results.map(r => ({ id: r.id, title: r.title, url: r.url, note: r.note, createdAt: r.created_at })));
+    }
+    if (method === 'POST') {
+      const b = await request.json();
+      await db.prepare('INSERT OR REPLACE INTO growth_links (id, sync_code, title, url, note, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)').bind(b.id, syncCode, b.title ?? '', b.url ?? '', b.note ?? '', b.createdAt || now(), now()).run();
+      return json({ ok: true });
+    }
+    if (method === 'DELETE') {
+      const id = new URL(request.url).searchParams.get('id');
+      await db.prepare('DELETE FROM growth_links WHERE id = ? AND sync_code = ?').bind(id, syncCode).run();
+      return json({ ok: true });
+    }
+  }
+
   return err('Not found', 404);
 }
-
-async function handleGeneral(request, env, path, method, syncCode) {
   const db = env.GENERAL_DB;
 
   if (path === '/api/general/cells') {
@@ -401,6 +440,23 @@ async function handleGeneral(request, env, path, method, syncCode) {
     if (method === 'DELETE') {
       const key = new URL(request.url).searchParams.get('key');
       await db.prepare('DELETE FROM settings WHERE sync_code = ? AND key = ?').bind(syncCode, key).run();
+      return json({ ok: true });
+    }
+  }
+
+  if (path === '/api/general/media-notes') {
+    if (method === 'GET') {
+      const { results } = await db.prepare('SELECT * FROM media_notes WHERE sync_code = ? ORDER BY created_at DESC').bind(syncCode).all();
+      return json(results.map(r => ({ id: r.id, text: r.text, createdAt: r.created_at })));
+    }
+    if (method === 'POST') {
+      const b = await request.json();
+      await db.prepare('INSERT OR REPLACE INTO media_notes (id, sync_code, text, created_at, updated_at) VALUES (?, ?, ?, ?, ?)').bind(b.id, syncCode, b.text ?? '', b.createdAt || now(), now()).run();
+      return json({ ok: true });
+    }
+    if (method === 'DELETE') {
+      const id = new URL(request.url).searchParams.get('id');
+      await db.prepare('DELETE FROM media_notes WHERE id = ? AND sync_code = ?').bind(id, syncCode).run();
       return json({ ok: true });
     }
   }

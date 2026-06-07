@@ -46,6 +46,7 @@ interface TechoGridProps {
   onSaveSetting?: (key: string, value: string) => void;
   initialCoverBg?: string;
   initialEditionLabel?: string;
+  initialCoverTitle?: string;
 }
 
 const colorPresets = [
@@ -289,11 +290,14 @@ export default function TechoGrid({
   onSaveSetting,
   initialCoverBg = '',
   initialEditionLabel = '',
+  initialCoverTitle = '',
 }: TechoGridProps) {
 
-  // Cover card: background image + edition label editable
+  // Cover card: background image + edition label + title editable
   const [coverBg, setCoverBg] = React.useState<string>(initialCoverBg);
   const [editingEdition, setEditingEdition] = React.useState(false);
+  const [coverTitle, setCoverTitle] = React.useState<string>(initialCoverTitle);
+  const [editingCoverTitle, setEditingCoverTitle] = React.useState(false);
   const [editionLabel, setEditionLabel] = React.useState<string>(initialEditionLabel);
   // Dynamic current week calculation
   const today = new Date();
@@ -788,9 +792,26 @@ export default function TechoGrid({
             >✕</button>
           )}
 
-          <div className={`font-display tracking-[0.25em] text-md font-bold mt-1 uppercase ${coverBg ? 'text-white drop-shadow' : 'text-[#8a8069]'}`}>
-            JIBUN TECHO
-          </div>
+          {/* Cover title — double click to edit */}
+          {editingCoverTitle ? (
+            <input
+              autoFocus
+              value={coverTitle}
+              onChange={e => setCoverTitle(e.target.value)}
+              onBlur={() => { setEditingCoverTitle(false); onSaveSetting?.('cover_title', coverTitle); }}
+              onKeyDown={e => { if (e.key === 'Enter' || e.key === 'Escape') { setEditingCoverTitle(false); onSaveSetting?.('cover_title', coverTitle); } }}
+              placeholder="JIBUN TECHO"
+              className={`mt-1 text-md font-display font-bold text-center tracking-[0.25em] uppercase bg-white/80 border border-white/60 rounded px-2 py-0.5 outline-none w-40 ${coverBg ? 'text-[#8a8069]' : 'text-[#8a8069]'}`}
+            />
+          ) : (
+            <div
+              className={`font-display tracking-[0.25em] text-md font-bold mt-1 uppercase cursor-text ${coverBg ? 'text-white drop-shadow' : 'text-[#8a8069]'}`}
+              onDoubleClick={() => setEditingCoverTitle(true)}
+              title="双击编辑标题"
+            >
+              {coverTitle || 'JIBUN TECHO'}
+            </div>
+          )}
           <div className={`h-[2px] w-12 my-1 ${coverBg ? 'bg-white/40' : 'bg-[#8a8069]/30'}`}></div>
           <div className={`text-xs font-mono ${coverBg ? 'text-white/90 drop-shadow' : 'text-[#8a816b]'}`}>自我成长手帐 {currentYear}</div>
 

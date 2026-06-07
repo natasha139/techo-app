@@ -334,6 +334,7 @@ export default function App() {
   const [isCustomizerOpen, setIsCustomizerOpen] = useState(false);
   const [coverBg, setCoverBg] = useState<string>('');
   const [editionLabel, setEditionLabel] = useState<string>('');
+  const [coverTitle, setCoverTitle] = useState<string>('');
 
   const handleThemeChange = (themeId: string) => {
     setActiveThemeId(themeId);
@@ -492,6 +493,7 @@ export default function App() {
         if (settingsData.custom_quote) setCustomQuote(settingsData.custom_quote);
         if (settingsData.cover_bg) setCoverBg(settingsData.cover_bg);
         if (settingsData.edition_label) setEditionLabel(settingsData.edition_label);
+        if (settingsData.cover_title) setCoverTitle(settingsData.cover_title);
         if (settingsData.inbox_custom_cats) {
           try { setInboxCustomCats(JSON.parse(settingsData.inbox_custom_cats)); } catch {}
         }
@@ -1585,6 +1587,7 @@ export default function App() {
                     onSaveSetting={saveSetting}
                     initialCoverBg={coverBg}
                     initialEditionLabel={editionLabel}
+                    initialCoverTitle={coverTitle}
                   />
                 )}
 

@@ -117,6 +117,21 @@ export const api = {
     upsert: (sc: string, item: any) => apiFetch('/api/parenting/resources', { method: 'POST', body: JSON.stringify(item) }, sc),
     delete: (sc: string, id: string) => apiFetch(`/api/parenting/resources?id=${id}`, { method: 'DELETE' }, sc),
   },
+  childGoals: {
+    list: (sc: string, scope?: string) => apiFetch(`/api/parenting/goals${scope ? `?scope=${scope}` : ''}`, {}, sc),
+    upsert: (sc: string, item: any) => apiFetch('/api/parenting/goals', { method: 'POST', body: JSON.stringify(item) }, sc),
+    delete: (sc: string, id: string) => apiFetch(`/api/parenting/goals?id=${id}`, { method: 'DELETE' }, sc),
+  },
+  growthLinks: {
+    list: (sc: string) => apiFetch('/api/parenting/growth-links', {}, sc),
+    upsert: (sc: string, item: any) => apiFetch('/api/parenting/growth-links', { method: 'POST', body: JSON.stringify(item) }, sc),
+    delete: (sc: string, id: string) => apiFetch(`/api/parenting/growth-links?id=${id}`, { method: 'DELETE' }, sc),
+  },
+  mediaNotes: {
+    list: (sc: string) => apiFetch('/api/general/media-notes', {}, sc),
+    upsert: (sc: string, item: any) => apiFetch('/api/general/media-notes', { method: 'POST', body: JSON.stringify(item) }, sc),
+    delete: (sc: string, id: string) => apiFetch(`/api/general/media-notes?id=${id}`, { method: 'DELETE' }, sc),
+  },
   settings: {
     getAll: (sc: string) => apiFetch('/api/general/settings', {}, sc),
     set: (sc: string, data: Record<string, string>) => apiFetch('/api/general/settings', { method: 'POST', body: JSON.stringify(data) }, sc),
