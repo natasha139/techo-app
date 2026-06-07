@@ -6,7 +6,7 @@
 import React, { useState } from 'react';
 import {
   Inbox, Plus, Trash2, CheckCircle2, Circle, ExternalLink,
-  Search, ChevronDown, Paperclip
+  Search, ChevronDown, Paperclip, Pencil
 } from 'lucide-react';
 import { InboxItem, InboxAttachment } from '../types';
 import RichEditor, { sanitizeHtml } from './RichEditor';
@@ -363,12 +363,24 @@ export default function InboxSection({
                         </div>
                       </div>
 
-                      <button
-                        onClick={() => onDelete(item.id)}
-                        className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-400 cursor-pointer p-1 transition-all shrink-0"
-                      >
-                        <Trash2 size={12} />
-                      </button>
+                      <div className="flex items-center gap-0.5 shrink-0">
+                        {(hasNotes || hasAtts) && !isEditingNotes && (
+                          <button
+                            type="button"
+                            onClick={() => openNotesEdit(item)}
+                            className="text-amber-400 hover:text-amber-600 cursor-pointer p-1 transition-colors"
+                            title="编辑备注"
+                          >
+                            <Pencil size={12} />
+                          </button>
+                        )}
+                        <button
+                          onClick={() => onDelete(item.id)}
+                          className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-400 cursor-pointer p-1 transition-all"
+                        >
+                          <Trash2 size={12} />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 );
