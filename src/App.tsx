@@ -297,6 +297,7 @@ export default function App() {
   });
   const [username, setUsername] = useState<string>(() => localStorage.getItem('techo_username') || 'Natasha');
   const [appTitle, setAppTitle] = useState<string>(() => localStorage.getItem('techo_app_title') || '自我手帐');
+  const [avatarUrl, setAvatarUrl] = useState<string>(() => localStorage.getItem('techo_avatar') || '');
   const [appSubtitle, setAppSubtitle] = useState<string>(() => localStorage.getItem('techo_app_subtitle') || 'Self-Growth Hand Planner • inspired by Kokuyo');
   const [editingTitle, setEditingTitle] = useState(false);
   const [editingSubtitle, setEditingSubtitle] = useState(false);
@@ -882,9 +883,23 @@ export default function App() {
           </div>
 
           <div className="flex items-center gap-3 pl-3">
-            <div className="w-8 h-8 rounded-full bg-[#8a816c] flex items-center justify-center text-white shrink-0 shadow-xxs">
-              <span className="font-display font-black text-sm">自</span>
-            </div>
+            <label className="w-8 h-8 rounded-full bg-[#8a816c] flex items-center justify-center text-white shrink-0 shadow-xxs cursor-pointer overflow-hidden hover:opacity-80 transition-opacity" title="点击上传头像">
+              {avatarUrl
+                ? <img src={avatarUrl} alt="avatar" className="w-full h-full object-cover" />
+                : <span className="font-display font-black text-sm">自</span>
+              }
+              <input type="file" accept="image/*" className="hidden" onChange={e => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = ev => {
+                  const url = ev.target?.result as string;
+                  setAvatarUrl(url);
+                  localStorage.setItem('techo_avatar', url);
+                };
+                reader.readAsDataURL(file);
+              }} />
+            </label>
             <div>
               <div className="flex items-center gap-2">
                 {editingTitle ? (
