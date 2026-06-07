@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Printer } from 'lucide-react';
+import { Printer, Plus, Trash2, CheckCircle2, Circle, ChevronDown, ChevronUp } from 'lucide-react';
 import { useReactToPrint } from 'react-to-print';
 import { PlannerCell } from '../types';
 
@@ -182,6 +182,28 @@ export default function BabyTechoGrid({
   const [editingNoteDay, setEditingNoteDay] = useState<number | null>(null);
   const [noteText, setNoteText] = useState('');
 
+  // Goals state
+  type Goal = { id: string; text: string; done: boolean; scope: 'week' | 'month' };
+  const GOALS_KEY = 'techo_baby_goals';
+  const [goals, setGoals] = useState<Goal[]>(() => {
+    try { return JSON.parse(localStorage.getItem(GOALS_KEY) || '[]'); } catch { return []; }
+  });
+  const [goalScope, setGoalScope] = useState<'week' | 'month'>('week');
+  const [goalInput, setGoalInput] = useState('');
+  const [goalsExpanded, setGoalsExpanded] = useState(true);
+
+  const saveGoals = (updated: Goal[]) => {
+    setGoals(updated);
+    localStorage.setItem(GOALS_KEY, JSON.stringify(updated));
+  };
+  const addGoal = () => {
+    if (!goalInput.trim()) return;
+    saveGoals([...goals, { id: `g_${Date.now()}`, text: goalInput.trim(), done: false, scope: goalScope }]);
+    setGoalInput('');
+  };
+  const toggleGoal = (id: string) => saveGoals(goals.map(g => g.id === id ? { ...g, done: !g.done } : g));
+  const deleteGoal = (id: string) => saveGoals(goals.filter(g => g.id !== id));
+
   const startEditNote = (idx: number) => {
     setNoteText(renderedNotes[idx] || '');
     setEditingNoteDay(idx);
@@ -226,6 +248,67 @@ export default function BabyTechoGrid({
           <Printer size={13} />
           打印 / 导出 PDF
         </button>
+      </div>
+
+      {/* Goals Panel */}
+      <div className="no-print border border-t-0 border-pink-200 bg-[#fffbfd]">
+        <button
+          onClick={() => setGoalsExpanded(v => !v)}
+          className="w-full flex items-center justify-between px-4 py-2 text-xs font-bold text-[#c06080] hover:bg-pink-50 transition-colors cursor-pointer"
+        >
+          <span className="flex items-center gap-1.5">🎯 {childName}的目标计划</span>
+          {goalsExpanded ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+        </button>
+
+        {goalsExpanded && (
+          <div className="px-4 pb-4 space-y-3">
+            {/* Scope tabs */}
+            <div className="flex items-center gap-1 bg-pink-50 border border-pink-100 p-0.5 rounded-md w-fit text-xs">
+              {(['week', 'month'] as const).map(s => (
+                <button key={s} onClick={() => setGoalScope(s)}
+                  className={`px-3 py-1 rounded font-semibold transition-all cursor-pointer ${goalScope === s ? 'bg-[#c06080] text-white' : 'text-[#c06080]/70 hover:bg-pink-100'}`}>
+                  {s === 'week' ? '本周目标' : '本月目标'}
+                </button>
+              ))}
+            </div>
+
+            {/* Add input */}
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={goalInput}
+                onChange={e => setGoalInput(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && addGoal()}
+                placeholder={goalScope === 'week' ? '本周想完成什么？' : '本月大目标...'}
+                className="flex-1 bg-white border border-pink-200 rounded-md px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-pink-300"
+              />
+              <button onClick={addGoal}
+                className="px-2.5 py-1.5 bg-[#c06080] hover:bg-[#a04060] text-white rounded-md cursor-pointer transition-colors">
+                <Plus size={13} />
+              </button>
+            </div>
+
+            {/* Goals list */}
+            {goals.filter(g => g.scope === goalScope).length === 0 ? (
+              <p className="text-[11px] text-gray-300 text-center py-2">还没有{goalScope === 'week' ? '本周' : '本月'}目标</p>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1.5">
+                {goals.filter(g => g.scope === goalScope).map(g => (
+                  <div key={g.id} className="flex items-center gap-2 bg-white border border-pink-100 rounded-md px-2.5 py-1.5 group hover:border-pink-200 transition-colors">
+                    <button onClick={() => toggleGoal(g.id)} className="shrink-0 cursor-pointer text-gray-300 hover:text-[#c06080] transition-colors">
+                      {g.done ? <CheckCircle2 size={14} className="text-[#c06080]" /> : <Circle size={14} />}
+                    </button>
+                    <span className={`flex-1 text-xs leading-snug ${g.done ? 'line-through text-gray-300' : 'text-[#3a3528]'}`}>{g.text}</span>
+                    <button onClick={() => deleteGoal(g.id)}
+                      className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-400 cursor-pointer transition-all shrink-0">
+                      <Trash2 size={11} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="bg-white border border-t-0 border-[#d3cfc3] rounded-b-lg overflow-hidden print:overflow-visible">
