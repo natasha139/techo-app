@@ -7,6 +7,12 @@ import React, { useState } from 'react';
 import { DollarSign, MessageSquareCode, Plus, Trash2, CalendarDays, BarChart3, TrendingUp, StickyNote } from 'lucide-react';
 import { SideHustleContent, FinancialMetric } from '../types';
 
+interface MediaNote {
+  id: string;
+  text: string;
+  createdAt: string;
+}
+
 interface SideHustleProps {
   contents: SideHustleContent[];
   finance: FinancialMetric[];
@@ -15,6 +21,9 @@ interface SideHustleProps {
   onUpdateContentStatus: (id: string, status: 'concept' | 'in_progress' | 'published') => void;
   onAddFinance: (f: Omit<FinancialMetric, 'id'>) => void;
   onDeleteFinance: (id: string) => void;
+  mediaNotes?: MediaNote[];
+  onAddMediaNote?: (note: Omit<MediaNote, 'id'>) => void;
+  onDeleteMediaNote?: (id: string) => void;
 }
 
 export default function MediaSideHustleSection({
@@ -24,7 +33,10 @@ export default function MediaSideHustleSection({
   onDeleteContent,
   onUpdateContentStatus,
   onAddFinance,
-  onDeleteFinance
+  onDeleteFinance,
+  mediaNotes = [],
+  onAddMediaNote,
+  onDeleteMediaNote,
 }: SideHustleProps) {
   
   // Adding state for content
@@ -55,24 +67,17 @@ export default function MediaSideHustleSection({
     }
   };
 
-  // Notes state (localStorage)
+  // Notes state
   const [noteInput, setNoteInput] = useState('');
-  const [notes, setNotes] = useState<{ id: string; text: string; createdAt: string }[]>(() => {
-    try { return JSON.parse(localStorage.getItem('techo_media_notes') || '[]'); } catch { return []; }
-  });
 
   const addNote = () => {
     if (!noteInput.trim()) return;
-    const updated = [{ id: `mn_${Date.now()}`, text: noteInput.trim(), createdAt: new Date().toISOString().slice(0, 10) }, ...notes];
-    setNotes(updated);
-    localStorage.setItem('techo_media_notes', JSON.stringify(updated));
+    onAddMediaNote?.({ text: noteInput.trim(), createdAt: new Date().toISOString().slice(0, 10) });
     setNoteInput('');
   };
 
   const deleteNote = (id: string) => {
-    const updated = notes.filter(n => n.id !== id);
-    setNotes(updated);
-    localStorage.setItem('techo_media_notes', JSON.stringify(updated));
+    onDeleteMediaNote?.(id);
   };
 
   const submitFinance = (e: React.FormEvent) => {
@@ -397,11 +402,11 @@ export default function MediaSideHustleSection({
             <Plus size={14} />
           </button>
         </div>
-        {notes.length === 0 ? (
+        {mediaNotes.length === 0 ? (
           <p className="text-center text-xs text-gray-300 py-4">还没有便签，随手记下来吧</p>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 max-h-[260px] overflow-y-auto pr-1">
-            {notes.map(n => (
+            {mediaNotes.map(n => (
               <div key={n.id} className="group bg-[#fdfcf4] border border-[#e8e4d8] rounded-md p-3 relative hover:border-purple-200 transition-colors">
                 <p className="text-xs text-[#3a3528] leading-relaxed whitespace-pre-wrap pr-4">{n.text}</p>
                 <span className="text-[9px] text-gray-300 font-mono mt-1.5 block">{n.createdAt}</span>

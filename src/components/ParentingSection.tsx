@@ -20,6 +20,13 @@ import {
 } from 'lucide-react';
 import { ChildMilestone, ChildDiary, ChildDailyLog, ParentingResource } from '../types';
 
+interface GrowthLink {
+  id: string;
+  title: string;
+  url: string;
+  note: string;
+}
+
 interface ParentingProps {
   milestones: ChildMilestone[];
   onAddMilestone: (m: Omit<ChildMilestone, 'id'>) => void;
@@ -33,6 +40,9 @@ interface ParentingProps {
   resources: ParentingResource[];
   onAddResource: (r: Omit<ParentingResource, 'id'>) => void;
   onDeleteResource: (id: string) => void;
+  growthLinks?: GrowthLink[];
+  onAddGrowthLink?: (link: Omit<GrowthLink, 'id'>) => void;
+  onDeleteGrowthLink?: (id: string) => void;
 }
 
 const moodPresets = [
@@ -69,6 +79,9 @@ export default function ParentingSection({
   resources = [],
   onAddResource,
   onDeleteResource,
+  growthLinks = [],
+  onAddGrowthLink,
+  onDeleteGrowthLink,
 }: ParentingProps) {
 
   const [subTab, setSubTab] = useState<'milestones' | 'diaries' | 'logs' | 'resources'>('milestones');
@@ -88,11 +101,17 @@ export default function ParentingSection({
   const [linkTitle, setLinkTitle] = useState('');
   const [linkUrl, setLinkUrl] = useState('');
   const [linkNote, setLinkNote] = useState('');
-  const [links, setLinks] = useState<{ id: string; title: string; url: string; note: string }[]>(() => {
-    try { return JSON.parse(localStorage.getItem('techo_growth_links') || '[]'); } catch { return []; }
-  });
 
-  // Resource input states
+  const submitLink = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!linkUrl.trim()) return;
+    onAddGrowthLink?.({ title: linkTitle.trim() || linkUrl, url: linkUrl.trim(), note: linkNote.trim() });
+    setLinkTitle(''); setLinkUrl(''); setLinkNote('');
+  };
+
+  const deleteLink = (id: string) => {
+    onDeleteGrowthLink?.(id);
+  };
   const [rName, setRName] = useState('');
   const [rType, setRType] = useState<ParentingResource['type']>('app');
   const [rSubject, setRSubject] = useState('');
@@ -108,20 +127,7 @@ export default function ParentingSection({
     setRName(''); setRSubject(''); setRNotes(''); setRUrl(''); setRRating(0);
   };
 
-  const submitLink = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!linkUrl.trim()) return;
-    const updated = [...links, { id: `lnk_${Date.now()}`, title: linkTitle.trim() || linkUrl, url: linkUrl.trim(), note: linkNote.trim() }];
-    setLinks(updated);
-    localStorage.setItem('techo_growth_links', JSON.stringify(updated));
-    setLinkTitle(''); setLinkUrl(''); setLinkNote('');
-  };
-
-  const deleteLink = (id: string) => {
-    const updated = links.filter(l => l.id !== id);
-    setLinks(updated);
-    localStorage.setItem('techo_growth_links', JSON.stringify(updated));
-  };
+  // Resource input states
 
   const submitMilestone = (e: React.FormEvent) => {
     e.preventDefault();
@@ -595,13 +601,13 @@ export default function ParentingSection({
               </form>
 
               <div className="space-y-2 overflow-y-auto max-h-[350px] pr-1 flex-1">
-                {links.length === 0 ? (
+                {growthLinks.length === 0 ? (
                   <div className="text-center py-12 text-gray-400 text-xs">
                     <Link2 size={24} className="mx-auto mb-2 opacity-20" />
                     <p>还没有档案链接，把 Excel 或文档链接粘贴进来吧</p>
                   </div>
                 ) : (
-                  links.map(l => (
+                  growthLinks.map(l => (
                     <div key={l.id} className="flex items-center gap-3 bg-white border border-[#e8e4da] rounded-md px-3 py-2.5 group hover:border-pink-200 transition-colors">
                       <Link2 size={13} className="text-techo-pink shrink-0" />
                       <div className="flex-1 min-w-0">

@@ -380,6 +380,10 @@ export default function App() {
   const [inboxItems, setInboxItems] = useState<InboxItem[]>([]);
   const [fitnessLogs, setFitnessLogs] = useState<FitnessLog[]>([]);
   const [parentingResources, setParentingResources] = useState<ParentingResource[]>([]);
+  const [childGoals, setChildGoals] = useState<any[]>([]);
+  const [growthLinks, setGrowthLinks] = useState<any[]>([]);
+  const [mediaNotes, setMediaNotes] = useState<any[]>([]);
+  const [inboxCustomCats, setInboxCustomCats] = useState<string[]>([]);
   
   // Today's Notes local state for days Mon-Sun (Indices 0 - 6)
   const [todayNotes, setTodayNotes] = useState<{ [dayIndex: number]: string }>({
@@ -411,6 +415,7 @@ export default function App() {
         milestoneData, childLogData, childDiaryData,
         cellData, habitData, summaryData, financeData,
         inboxData, fitnessData, parentingResourceData, settingsData,
+        childGoalsData, growthLinksData, mediaNotesData,
       ] = await Promise.all([
         api.wishes.list(sc),
         api.skills.list(sc),
@@ -429,6 +434,9 @@ export default function App() {
         api.fitness.list(sc),
         api.parentingResources.list(sc),
         api.settings.getAll(sc),
+        api.childGoals.list(sc),
+        api.growthLinks.list(sc),
+        api.mediaNotes.list(sc),
       ]);
 
       setWishes(wishData.map((w: any) => ({ id: w.id, order: w.ord, content: w.content, isCompleted: w.is_completed === 1, category: w.category })));
@@ -447,6 +455,11 @@ export default function App() {
       setInboxItems(inboxData);
       setFitnessLogs(fitnessData);
       setParentingResources(parentingResourceData);
+
+      // Batch 2: child goals, growth links, media notes
+      setChildGoals((childGoalsData || []).map((g: any) => ({ ...g, done: g.is_done === 1 || g.done === true })));
+      setGrowthLinks(growthLinksData || []);
+      setMediaNotes(mediaNotesData || []);
 
       if (summaryData) {
         setWeeklySummary({ ...initialWeeklySummary, ...summaryData });
@@ -479,6 +492,9 @@ export default function App() {
         if (settingsData.custom_quote) setCustomQuote(settingsData.custom_quote);
         if (settingsData.cover_bg) setCoverBg(settingsData.cover_bg);
         if (settingsData.edition_label) setEditionLabel(settingsData.edition_label);
+        if (settingsData.inbox_custom_cats) {
+          try { setInboxCustomCats(JSON.parse(settingsData.inbox_custom_cats)); } catch {}
+        }
       }
     } catch (e: any) {
       pushLog('error', `加载失败: ${e.message}`);
@@ -866,6 +882,57 @@ export default function App() {
   const handleDeleteParentingResource = (id: string) => {
     setParentingResources(prev => prev.filter(r => r.id !== id));
     apiCall(() => api.parentingResources.delete(syncCode, id), 'parenting_resources');
+  };
+
+  // 12. Growth Links
+  const handleAddGrowthLink = (link: { title: string; url: string; note: string }) => {
+    const item = { ...link, id: `lnk_${Date.now()}` };
+    setGrowthLinks(prev => [...prev, item]);
+    apiCall(() => api.growthLinks.upsert(syncCode, item), 'growth_links');
+  };
+
+  const handleDeleteGrowthLink = (id: string) => {
+    setGrowthLinks(prev => prev.filter(l => l.id !== id));
+    apiCall(() => api.growthLinks.delete(syncCode, id), 'growth_links');
+  };
+
+  // 13. Media Notes
+  const handleAddMediaNote = (note: { text: string; createdAt: string }) => {
+    const item = { ...note, id: `mn_${Date.now()}` };
+    setMediaNotes(prev => [item, ...prev]);
+    apiCall(() => api.mediaNotes.upsert(syncCode, item), 'media_notes');
+  };
+
+  const handleDeleteMediaNote = (id: string) => {
+    setMediaNotes(prev => prev.filter(n => n.id !== id));
+    apiCall(() => api.mediaNotes.delete(syncCode, id), 'media_notes');
+  };
+
+  // 14. Inbox custom categories
+  const handleSaveInboxCustomCat = (cat: string) => {
+    if (inboxCustomCats.includes(cat)) return;
+    const updated = [...inboxCustomCats, cat];
+    setInboxCustomCats(updated);
+    saveSetting('inbox_custom_cats', JSON.stringify(updated));
+  };
+
+  // 15. Child Goals
+  const handleAddChildGoal = (goal: { text: string; done: boolean; scope: 'week' | 'month' }) => {
+    const item = { ...goal, id: `g_${Date.now()}` };
+    setChildGoals(prev => [...prev, item]);
+    apiCall(() => api.childGoals.upsert(syncCode, item), 'child_goals');
+  };
+
+  const handleToggleChildGoal = (id: string) => {
+    const updated = childGoals.map(g => g.id === id ? { ...g, is_done: !g.is_done, done: !g.done } : g);
+    setChildGoals(updated);
+    const item = updated.find(g => g.id === id)!;
+    apiCall(() => api.childGoals.upsert(syncCode, item), 'child_goals');
+  };
+
+  const handleDeleteChildGoal = (id: string) => {
+    setChildGoals(prev => prev.filter(g => g.id !== id));
+    apiCall(() => api.childGoals.delete(syncCode, id), 'child_goals');
   };
 
   // -- REAL D1 SYNC (reload from API) --
@@ -1530,6 +1597,10 @@ export default function App() {
                     onSaveTodayNote={handleSaveBabyTodayNote}
                     childName="小树"
                     weekOffset={weekOffset}
+                    childGoals={childGoals}
+                    onAddChildGoal={handleAddChildGoal}
+                    onToggleChildGoal={handleToggleChildGoal}
+                    onDeleteChildGoal={handleDeleteChildGoal}
                   />
                 )}
               </div>
@@ -1579,6 +1650,9 @@ export default function App() {
                 onUpdateContentStatus={handleUpdateSHContentStatus}
                 onAddFinance={handleAddFinance}
                 onDeleteFinance={handleDeleteFinance}
+                mediaNotes={mediaNotes}
+                onAddMediaNote={handleAddMediaNote}
+                onDeleteMediaNote={handleDeleteMediaNote}
               />
             )}
 
@@ -1596,6 +1670,9 @@ export default function App() {
                 resources={parentingResources}
                 onAddResource={handleAddParentingResource}
                 onDeleteResource={handleDeleteParentingResource}
+                growthLinks={growthLinks}
+                onAddGrowthLink={handleAddGrowthLink}
+                onDeleteGrowthLink={handleDeleteGrowthLink}
               />
             )}
 
@@ -1615,6 +1692,8 @@ export default function App() {
                 onAdd={handleAddInbox}
                 onUpdate={handleUpdateInbox}
                 onDelete={handleDeleteInbox}
+                customCats={inboxCustomCats}
+                onSaveCustomCat={handleSaveInboxCustomCat}
               />
             )}
 

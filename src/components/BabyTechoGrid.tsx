@@ -3,6 +3,8 @@ import { Printer, Plus, Trash2, CheckCircle2, Circle, ChevronDown, ChevronUp } f
 import { useReactToPrint } from 'react-to-print';
 import { PlannerCell } from '../types';
 
+type Goal = { id: string; text: string; done: boolean; scope: 'week' | 'month' };
+
 interface BabyTechoGridProps {
   cells: PlannerCell[];
   onSaveCell: (dayIndex: number, hour: number, text: string, color: string) => void;
@@ -11,6 +13,10 @@ interface BabyTechoGridProps {
   onSaveTodayNote: (dayIndex: number, text: string) => void;
   childName?: string;
   weekOffset?: number;
+  childGoals?: Goal[];
+  onAddChildGoal?: (goal: Omit<Goal, 'id'>) => void;
+  onToggleChildGoal?: (id: string) => void;
+  onDeleteChildGoal?: (id: string) => void;
 }
 
 const colorPresets = [
@@ -130,6 +136,10 @@ export default function BabyTechoGrid({
   onSaveTodayNote,
   childName = '小树',
   weekOffset = 0,
+  childGoals = [],
+  onAddChildGoal,
+  onToggleChildGoal,
+  onDeleteChildGoal,
 }: BabyTechoGridProps) {
   const daysOfWeek = getCurrentWeekDays(weekOffset);
   const today = new Date();
@@ -183,26 +193,17 @@ export default function BabyTechoGrid({
   const [noteText, setNoteText] = useState('');
 
   // Goals state
-  type Goal = { id: string; text: string; done: boolean; scope: 'week' | 'month' };
-  const GOALS_KEY = 'techo_baby_goals';
-  const [goals, setGoals] = useState<Goal[]>(() => {
-    try { return JSON.parse(localStorage.getItem(GOALS_KEY) || '[]'); } catch { return []; }
-  });
   const [goalScope, setGoalScope] = useState<'week' | 'month'>('week');
   const [goalInput, setGoalInput] = useState('');
   const [goalsExpanded, setGoalsExpanded] = useState(true);
 
-  const saveGoals = (updated: Goal[]) => {
-    setGoals(updated);
-    localStorage.setItem(GOALS_KEY, JSON.stringify(updated));
-  };
   const addGoal = () => {
     if (!goalInput.trim()) return;
-    saveGoals([...goals, { id: `g_${Date.now()}`, text: goalInput.trim(), done: false, scope: goalScope }]);
+    onAddChildGoal?.({ text: goalInput.trim(), done: false, scope: goalScope });
     setGoalInput('');
   };
-  const toggleGoal = (id: string) => saveGoals(goals.map(g => g.id === id ? { ...g, done: !g.done } : g));
-  const deleteGoal = (id: string) => saveGoals(goals.filter(g => g.id !== id));
+  const toggleGoal = (id: string) => onToggleChildGoal?.(id);
+  const deleteGoal = (id: string) => onDeleteChildGoal?.(id);
 
   const startEditNote = (idx: number) => {
     setNoteText(renderedNotes[idx] || '');
@@ -289,11 +290,11 @@ export default function BabyTechoGrid({
             </div>
 
             {/* Goals list */}
-            {goals.filter(g => g.scope === goalScope).length === 0 ? (
+            {childGoals.filter(g => g.scope === goalScope).length === 0 ? (
               <p className="text-[11px] text-gray-300 text-center py-2">还没有{goalScope === 'week' ? '本周' : '本月'}目标</p>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1.5">
-                {goals.filter(g => g.scope === goalScope).map(g => (
+                {childGoals.filter(g => g.scope === goalScope).map(g => (
                   <div key={g.id} className="flex items-center gap-2 bg-white border border-pink-100 rounded-md px-2.5 py-1.5 group hover:border-pink-200 transition-colors">
                     <button onClick={() => toggleGoal(g.id)} className="shrink-0 cursor-pointer text-gray-300 hover:text-[#c06080] transition-colors">
                       {g.done ? <CheckCircle2 size={14} className="text-[#c06080]" /> : <Circle size={14} />}

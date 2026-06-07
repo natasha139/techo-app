@@ -15,6 +15,8 @@ interface InboxSectionProps {
   onAdd: (item: Omit<InboxItem, 'id'>) => void;
   onUpdate: (id: string, fields: Partial<InboxItem>) => void;
   onDelete: (id: string) => void;
+  customCats?: string[];
+  onSaveCustomCat?: (cat: string) => void;
 }
 
 const CATEGORY_PRESETS = [
@@ -27,31 +29,17 @@ const CATEGORY_PRESETS = [
   { value: '灵感', color: 'bg-pink-100 text-pink-800 border-pink-200' },
 ];
 
-const CUSTOM_CATS_KEY = 'techo_inbox_custom_cats';
-
-function loadCustomCats(): string[] {
-  try { return JSON.parse(localStorage.getItem(CUSTOM_CATS_KEY) || '[]'); } catch { return []; }
-}
-
-function saveCustomCat(cat: string) {
-  const existing = loadCustomCats();
-  if (!existing.includes(cat)) {
-    localStorage.setItem(CUSTOM_CATS_KEY, JSON.stringify([...existing, cat]));
-  }
-}
-
 function getCategoryStyle(cat: string) {
   return CATEGORY_PRESETS.find(c => c.value === cat)?.color
     ?? 'bg-gray-100 text-gray-700 border-gray-200';
 }
 
-export default function InboxSection({ items, onAdd, onUpdate, onDelete }: InboxSectionProps) {
+export default function InboxSection({ items, onAdd, onUpdate, onDelete, customCats = [], onSaveCustomCat }: InboxSectionProps) {
   const [title, setTitle] = useState('');
   const [url, setUrl] = useState('');
   const [notes, setNotes] = useState('');
   const [category, setCategory] = useState('待研究');
   const [customCatInput, setCustomCatInput] = useState('');
-  const [customCats, setCustomCats] = useState<string[]>(loadCustomCats);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCat, setFilterCat] = useState<string>('all');
   const [filterReviewed, setFilterReviewed] = useState<'all' | 'pending' | 'reviewed'>('all');
@@ -65,8 +53,7 @@ export default function InboxSection({ items, onAdd, onUpdate, onDelete }: Inbox
     if (!title.trim()) return;
     const finalCat = category === '+ 新增分类' ? (customCatInput.trim() || '其他') : category;
     if (category === '+ 新增分类' && customCatInput.trim()) {
-      saveCustomCat(customCatInput.trim());
-      setCustomCats(loadCustomCats());
+      onSaveCustomCat?.(customCatInput.trim());
     }
     onAdd({
       title: title.trim(),
