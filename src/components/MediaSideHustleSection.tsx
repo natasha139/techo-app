@@ -4,7 +4,7 @@
  */
 
 import React, { useState } from 'react';
-import { DollarSign, MessageSquareCode, Plus, Trash2, CalendarDays, BarChart3, TrendingUp } from 'lucide-react';
+import { DollarSign, MessageSquareCode, Plus, Trash2, CalendarDays, BarChart3, TrendingUp, StickyNote } from 'lucide-react';
 import { SideHustleContent, FinancialMetric } from '../types';
 
 interface SideHustleProps {
@@ -53,6 +53,26 @@ export default function MediaSideHustleSection({
       });
       setTopic('');
     }
+  };
+
+  // Notes state (localStorage)
+  const [noteInput, setNoteInput] = useState('');
+  const [notes, setNotes] = useState<{ id: string; text: string; createdAt: string }[]>(() => {
+    try { return JSON.parse(localStorage.getItem('techo_media_notes') || '[]'); } catch { return []; }
+  });
+
+  const addNote = () => {
+    if (!noteInput.trim()) return;
+    const updated = [{ id: `mn_${Date.now()}`, text: noteInput.trim(), createdAt: new Date().toISOString().slice(0, 10) }, ...notes];
+    setNotes(updated);
+    localStorage.setItem('techo_media_notes', JSON.stringify(updated));
+    setNoteInput('');
+  };
+
+  const deleteNote = (id: string) => {
+    const updated = notes.filter(n => n.id !== id);
+    setNotes(updated);
+    localStorage.setItem('techo_media_notes', JSON.stringify(updated));
   };
 
   const submitFinance = (e: React.FormEvent) => {
@@ -351,6 +371,50 @@ export default function MediaSideHustleSection({
             </tbody>
           </table>
         </div>
+      </div>
+
+      {/* NOTES SECTION */}
+      <div className="lg:col-span-2 bg-white border-2 border-[#d3cfc3] rounded-lg p-5 shadow-sm">
+        <div className="flex items-center justify-between border-b-2 border-[#eae6d8] pb-3 mb-4 select-none">
+          <h3 className="font-display font-bold text-[#48453f] text-sm flex items-center gap-2">
+            <StickyNote size={16} className="text-purple-500" />
+            创作灵感 & 想法便签 (Notes)
+          </h3>
+          <span className="text-[10px] text-gray-400 font-mono">QUICK NOTES</span>
+        </div>
+        <div className="flex gap-2 mb-4">
+          <textarea
+            value={noteInput}
+            onChange={e => setNoteInput(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) addNote(); }}
+            placeholder="随手记想法、灵感、待研究的方向... (⌘Enter 保存)"
+            className="flex-1 bg-[#fdfcf8] border border-[#d3cfc3] rounded-md p-2.5 text-xs resize-none h-16 focus:outline-none focus:ring-1 focus:ring-purple-300 font-sans"
+          />
+          <button
+            onClick={addNote}
+            className="px-3 py-2 bg-purple-500 hover:bg-purple-600 text-white text-xs font-bold rounded-md cursor-pointer transition-colors shrink-0 self-end"
+          >
+            <Plus size={14} />
+          </button>
+        </div>
+        {notes.length === 0 ? (
+          <p className="text-center text-xs text-gray-300 py-4">还没有便签，随手记下来吧</p>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 max-h-[260px] overflow-y-auto pr-1">
+            {notes.map(n => (
+              <div key={n.id} className="group bg-[#fdfcf4] border border-[#e8e4d8] rounded-md p-3 relative hover:border-purple-200 transition-colors">
+                <p className="text-xs text-[#3a3528] leading-relaxed whitespace-pre-wrap pr-4">{n.text}</p>
+                <span className="text-[9px] text-gray-300 font-mono mt-1.5 block">{n.createdAt}</span>
+                <button
+                  onClick={() => deleteNote(n.id)}
+                  className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-400 cursor-pointer transition-all"
+                >
+                  <Trash2 size={11} />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
     </div>
