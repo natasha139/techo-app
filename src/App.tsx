@@ -75,7 +75,7 @@ import D1Console from './components/D1Console';
 import DiarySection from './components/DiarySection';
 import InboxSection from './components/InboxSection';
 import FitnessSection from './components/FitnessSection';
-import ProjectNav from './components/ProjectNav';
+// import ProjectNav from './components/ProjectNav'; // replaced by inline strip in header
 
 export const TECH_THEMES = [
   {
@@ -978,7 +978,6 @@ export default function App() {
   return (
     <>
       {!syncCode && <SyncModal onSuccess={handleSyncLogin} />}
-      <ProjectNav current="techo" />
     <div
       style={themeStyles}
       className={`min-h-screen py-4 px-2 sm:px-6 flex flex-col ${selectedFontClass} select-none antialiased md:py-6 transition-colors duration-500`}
@@ -1161,9 +1160,33 @@ export default function App() {
               </div>
             )}
           </div>
-        </header>
 
-        {/* ==================== INDEPENDENT STATIONERY CUSTOMIZER STUDIO ==================== */}
+          {/* PROJECT NAV — embedded strip */}
+          <div className="w-full border-t border-[#ebe7da] mt-2 pt-2 flex items-center gap-1 flex-wrap pl-3">
+            <span className="text-[9px] text-[#b0a99a] font-bold font-mono mr-1 tracking-wider">PROJECTS</span>
+            {[
+              { id: 'input-pipeline', label: 'Input Pipeline', url: 'https://input-pipeline.pages.dev', dot: '#60a5fa' },
+              { id: 'writing-archive', label: 'Writing Archive', url: 'https://natasha-ielts-library.pages.dev', dot: '#34d399' },
+              { id: 'encounter', label: 'Encounter', url: 'https://encounter-app.pages.dev', dot: '#a78bfa' },
+              { id: 'techo', label: 'Techo App', url: '#', dot: '#f59e0b' },
+              { id: 'phd', label: 'PhD Toolkit', url: 'https://phd-app-toolkit.pages.dev', dot: '#fb7185' },
+            ].map(p => (
+              p.id === 'techo' ? (
+                <span key={p.id} className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200 text-[10px] font-bold">
+                  <span style={{ width: 5, height: 5, borderRadius: '50%', background: p.dot, display: 'inline-block', flexShrink: 0 }} />
+                  {p.label}
+                </span>
+              ) : (
+                <a key={p.id} href={p.url} target="_blank" rel="noopener noreferrer"
+                  className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#f5f3eb] border border-[#ddd8cc] text-[10px] font-semibold text-[#6e685a] hover:bg-[#ebe7da] hover:text-[#3c3830] transition-colors"
+                >
+                  <span style={{ width: 5, height: 5, borderRadius: '50%', background: p.dot, display: 'inline-block', flexShrink: 0 }} />
+                  {p.label}
+                </a>
+              )
+            ))}
+          </div>
+        </header>
         {isCustomizerOpen && (
           <div className="bg-white border-2 border-[var(--card-border,#d3cfc3)] rounded-lg p-5 shadow-sm animate-fade-in space-y-4 relative overflow-hidden">
             {/* Spine binding rings for stationery flavor */}
