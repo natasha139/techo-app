@@ -25,8 +25,20 @@ const CATEGORY_PRESETS = [
   { value: '书单', color: 'bg-orange-100 text-orange-800 border-orange-200' },
   { value: '项目机会', color: 'bg-emerald-100 text-emerald-800 border-emerald-200' },
   { value: '灵感', color: 'bg-pink-100 text-pink-800 border-pink-200' },
-  { value: '其他', color: 'bg-gray-100 text-gray-700 border-gray-200' },
 ];
+
+const CUSTOM_CATS_KEY = 'techo_inbox_custom_cats';
+
+function loadCustomCats(): string[] {
+  try { return JSON.parse(localStorage.getItem(CUSTOM_CATS_KEY) || '[]'); } catch { return []; }
+}
+
+function saveCustomCat(cat: string) {
+  const existing = loadCustomCats();
+  if (!existing.includes(cat)) {
+    localStorage.setItem(CUSTOM_CATS_KEY, JSON.stringify([...existing, cat]));
+  }
+}
 
 function getCategoryStyle(cat: string) {
   return CATEGORY_PRESETS.find(c => c.value === cat)?.color
@@ -38,20 +50,29 @@ export default function InboxSection({ items, onAdd, onUpdate, onDelete }: Inbox
   const [url, setUrl] = useState('');
   const [notes, setNotes] = useState('');
   const [category, setCategory] = useState('待研究');
+  const [customCatInput, setCustomCatInput] = useState('');
+  const [customCats, setCustomCats] = useState<string[]>(loadCustomCats);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCat, setFilterCat] = useState<string>('all');
   const [filterReviewed, setFilterReviewed] = useState<'all' | 'pending' | 'reviewed'>('all');
+
+  const allCategories = [...CATEGORY_PRESETS.map(c => c.value), ...customCats, '+ 新增分类'];
 
   const today = new Date().toISOString();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) return;
+    const finalCat = category === '+ 新增分类' ? (customCatInput.trim() || '其他') : category;
+    if (category === '+ 新增分类' && customCatInput.trim()) {
+      saveCustomCat(customCatInput.trim());
+      setCustomCats(loadCustomCats());
+    }
     onAdd({
       title: title.trim(),
       url: url.trim() || undefined,
       notes: notes.trim() || undefined,
-      category,
+      category: finalCat,
       isReviewed: false,
       createdAt: today,
     });
@@ -59,6 +80,7 @@ export default function InboxSection({ items, onAdd, onUpdate, onDelete }: Inbox
     setUrl('');
     setNotes('');
     setCategory('待研究');
+    setCustomCatInput('');
   };
 
   const filtered = items.filter(item => {
@@ -135,10 +157,20 @@ export default function InboxSection({ items, onAdd, onUpdate, onDelete }: Inbox
                   onChange={e => setCategory(e.target.value)}
                   className="w-full bg-white border border-[#c2bdae] p-2 rounded text-xs focus:outline-none focus:ring-1 focus:ring-amber-400"
                 >
-                  {CATEGORY_PRESETS.map(c => (
-                    <option key={c.value} value={c.value}>{c.value}</option>
+                  {allCategories.map(c => (
+                    <option key={c} value={c}>{c}</option>
                   ))}
                 </select>
+                {category === '+ 新增分类' && (
+                  <input
+                    type="text"
+                    value={customCatInput}
+                    onChange={e => setCustomCatInput(e.target.value)}
+                    placeholder="输入新分类名称..."
+                    className="mt-1.5 w-full bg-white border border-amber-300 p-2 rounded text-xs focus:outline-none focus:ring-1 focus:ring-amber-400"
+                    autoFocus
+                  />
+                )}
               </div>
               <div className="sm:col-span-2">
                 <label className="block text-[10px] font-bold text-gray-500 mb-1">备注 (可选)</label>
@@ -174,7 +206,7 @@ export default function InboxSection({ items, onAdd, onUpdate, onDelete }: Inbox
               className="bg-[#f5f3eb] border border-[#d6cfbe] rounded-md px-2 py-1 text-xs text-[#555] outline-none cursor-pointer"
             >
               <option value="all">全部分类</option>
-              {CATEGORY_PRESETS.map(c => <option key={c.value} value={c.value}>{c.value}</option>)}
+              {[...CATEGORY_PRESETS.map(c => c.value), ...customCats].map(c => <option key={c} value={c}>{c}</option>)}
             </select>
             <div className="flex items-center gap-1 bg-[#f5f3eb] border border-[#d6cfbe] rounded-md p-0.5 text-xs">
               {(['all', 'pending', 'reviewed'] as const).map(v => (
