@@ -184,7 +184,79 @@ export const TECH_THEMES = [
       '--sidebar-active-text': '#1d1c1a',
       '--spine-bg': '#2b2a27',
     }
-  }
+  },
+  {
+    id: 'coral',
+    name: '珊瑚夕照 (Coral Dusk)',
+    description: '温柔珊瑚橙与杏粉，傍晚余晖般的暖意与活力。',
+    colors: {
+      '--color-techo-cream': '#fffaf7',
+      '--color-techo-cream-darker': '#fdf0e8',
+      '--color-techo-blue': '#8fa8c0',
+      '--color-techo-pink': '#e07060',
+      '--color-techo-orange': '#e8855a',
+      '--color-techo-teal': '#c0624a',
+      '--page-bg': '#f5e0d5',
+      '--card-border': '#e8cfc4',
+      '--sidebar-active-bg': '#d96848',
+      '--sidebar-active-text': '#ffffff',
+      '--spine-bg': '#e8c4b4',
+    }
+  },
+  {
+    id: 'midnight',
+    name: '深海午夜 (Midnight Ink)',
+    description: '深邃午夜蓝与星空银，沉稳专注的夜间书写氛围。',
+    colors: {
+      '--color-techo-cream': '#1a1f2e',
+      '--color-techo-cream-darker': '#222840',
+      '--color-techo-blue': '#6b9fd4',
+      '--color-techo-pink': '#e879a0',
+      '--color-techo-orange': '#f0a050',
+      '--color-techo-teal': '#5bbcb0',
+      '--page-bg': '#111624',
+      '--card-border': '#2a3148',
+      '--sidebar-active-bg': '#5bbcb0',
+      '--sidebar-active-text': '#111624',
+      '--spine-bg': '#1e2438',
+    }
+  },
+  {
+    id: 'lemon',
+    name: '春日柠檬 (Lemon Zest)',
+    description: '清新柠檬黄与嫩草绿，明亮轻快的春日能量感。',
+    colors: {
+      '--color-techo-cream': '#fefef8',
+      '--color-techo-cream-darker': '#f8f9e8',
+      '--color-techo-blue': '#7ab0a0',
+      '--color-techo-pink': '#d4986a',
+      '--color-techo-orange': '#d4a820',
+      '--color-techo-teal': '#6a9a50',
+      '--page-bg': '#eef2d8',
+      '--card-border': '#d8e0b8',
+      '--sidebar-active-bg': '#6a9a50',
+      '--sidebar-active-text': '#ffffff',
+      '--spine-bg': '#d4ddb0',
+    }
+  },
+  {
+    id: 'rose-gold',
+    name: '玫瑰金尘 (Rose Gold)',
+    description: '细腻玫瑰金与象牙白，现代优雅的轻奢质感。',
+    colors: {
+      '--color-techo-cream': '#fdf8f5',
+      '--color-techo-cream-darker': '#f8eeea',
+      '--color-techo-blue': '#9aacba',
+      '--color-techo-pink': '#c47e7e',
+      '--color-techo-orange': '#c99070',
+      '--color-techo-teal': '#b07878',
+      '--page-bg': '#ede0d8',
+      '--card-border': '#d8c8c0',
+      '--sidebar-active-bg': '#b07878',
+      '--sidebar-active-text': '#ffffff',
+      '--spine-bg': '#d4bdb4',
+    }
+  },
 ];
 
 const initialHabits: HabitTracker[] = [
@@ -770,13 +842,17 @@ export default function App() {
     ...currentTheme.colors,
     '--color-techo-grid': `rgba(220, 215, 201, ${gridOpacity / 100})`,
     backgroundColor: currentTheme.colors['--page-bg'],
-    color: activeThemeId === 'leather' ? '#eae5d8' : 'inherit',
+    color: (activeThemeId === 'leather' || activeThemeId === 'midnight') ? '#eae5d8' : 'inherit',
   } as React.CSSProperties;
 
-  const selectedFontClass = 
-    fontFamily === 'sans' ? 'font-sans' : 
-    fontFamily === 'display' ? 'font-display' : 
-    fontFamily === 'mono' ? 'font-mono' : 'font-serif';
+  const selectedFontClass =
+    fontFamily === 'sans' ? 'font-sans' :
+    fontFamily === 'display' ? 'font-display' :
+    fontFamily === 'mono' ? 'font-mono' :
+    fontFamily === 'rounded' ? 'font-sans' :
+    fontFamily === 'condensed' ? 'font-display' :
+    fontFamily === 'handwriting' ? 'font-serif' :
+    'font-serif';
 
   return (
     <>
@@ -1033,6 +1109,9 @@ export default function App() {
                       { id: 'display', name: '几何现代 (Outfit Tech)', preview: '创意几何流' },
                       { id: 'mono', name: '极客等宽 (Geek Code)', preview: '等宽程序员' },
                       { id: 'serif', name: '文艺宋体 (Lora Serif)', preview: '古雅宋纸风' },
+                      { id: 'rounded', name: '圆润可爱 (Rounded)', preview: '柔和圆润感' },
+                      { id: 'condensed', name: '紧凑标题 (Condensed)', preview: '紧凑有力度' },
+                      { id: 'handwriting', name: '手写笔迹 (Handwriting)', preview: '手账涂鸦风' },
                     ].map((font) => (
                       <button
                         key={font.id}
