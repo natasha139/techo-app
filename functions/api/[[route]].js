@@ -325,8 +325,9 @@ async function handleParenting(request, env, path, method, syncCode) {
     }
   }
 
-  return err('Not found', 404);
 }
+
+async function handleGeneral(request, env, path, method, syncCode) {
   const db = env.GENERAL_DB;
 
   if (path === '/api/general/cells') {
