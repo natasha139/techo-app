@@ -994,7 +994,7 @@ export default function App() {
             </div>
           </div>
         )}
-        <header className="bg-white border-2 border-[#d3cfc3] rounded-lg px-4 py-3 shadow-xs flex flex-col md:flex-row items-center justify-between gap-3 relative">
+        <header className="bg-white border-2 border-[#d3cfc3] rounded-lg px-4 py-3 shadow-xs flex flex-wrap items-center justify-between gap-3 relative">
           {/* Subtle physical notebook spine binding effect on the left rail */}
           <div className="absolute top-0 bottom-0 left-0 w-2.5 flex flex-col justify-between py-1 bg-[#d5cfbe] border-r border-[#bebaaa] rounded-l-lg overflow-hidden">
             {Array.from({ length: 6 }).map((_, i) => (
@@ -1162,7 +1162,7 @@ export default function App() {
           </div>
 
           {/* PROJECT NAV — embedded strip */}
-          <div className="w-full border-t border-[#ebe7da] mt-2 pt-2 flex items-center gap-1 flex-wrap pl-3">
+          <div className="w-full border-t border-[#ebe7da] pt-2 flex items-center gap-1 flex-wrap pl-3">
             <span className="text-[9px] text-[#b0a99a] font-bold font-mono mr-1 tracking-wider">PROJECTS</span>
             {[
               { id: 'input-pipeline', label: 'Input Pipeline', url: 'https://input-pipeline.pages.dev', dot: '#60a5fa' },
