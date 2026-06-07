@@ -131,11 +131,21 @@ export interface ChildDiary {
 }
 
 // 信息收集条目 (Inbox Clipping)
+export interface InboxAttachment {
+  id: string;          // uuid
+  name: string;        // 原始文件名
+  type: 'image' | 'doc';
+  mimeType: string;    // e.g. "image/jpeg", "application/pdf"
+  size: number;        // bytes
+  data: string;        // base64 data URI
+}
+
 export interface InboxItem {
   id: string;
   title: string;       // 项目名称，如 "ICEP HK 教育规划师"
   url?: string;        // 来源链接（可选）
-  notes?: string;      // 简短备注
+  notes?: string;      // 富文本备注 (HTML string)
+  attachments?: InboxAttachment[]; // 图片/文档附件
   category: string;    // 分类标签，如 "教育资源" / "工具" / "课程" / "待研究"
   isReviewed: boolean; // 是否已查阅
   createdAt: string;   // ISO date string

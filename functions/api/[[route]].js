@@ -41,9 +41,11 @@ async function initSchemas(env) {
     `CREATE TABLE IF NOT EXISTS hobbies (id TEXT PRIMARY KEY, sync_code TEXT NOT NULL, title TEXT NOT NULL, type TEXT NOT NULL DEFAULT 'book', creator TEXT NOT NULL DEFAULT '', last_date TEXT NOT NULL DEFAULT '', description TEXT NOT NULL DEFAULT '', rating INTEGER NOT NULL DEFAULT 0, cover_url TEXT, updated_at TEXT NOT NULL)`,
     `CREATE TABLE IF NOT EXISTS side_hustles (id TEXT PRIMARY KEY, sync_code TEXT NOT NULL, platform TEXT NOT NULL DEFAULT '', topic TEXT NOT NULL DEFAULT '', format TEXT NOT NULL DEFAULT 'other', publish_date TEXT NOT NULL DEFAULT '', status TEXT NOT NULL DEFAULT 'concept', updated_at TEXT NOT NULL)`,
     `CREATE TABLE IF NOT EXISTS diary_notes (id TEXT PRIMARY KEY, sync_code TEXT NOT NULL, title TEXT NOT NULL DEFAULT '', date TEXT NOT NULL DEFAULT '', weather TEXT, mood TEXT, category TEXT NOT NULL DEFAULT '', content TEXT NOT NULL DEFAULT '', tags TEXT NOT NULL DEFAULT '[]', updated_at TEXT NOT NULL)`,
-    `CREATE TABLE IF NOT EXISTS inbox_items (id TEXT PRIMARY KEY, sync_code TEXT NOT NULL, title TEXT NOT NULL DEFAULT '', url TEXT, notes TEXT, category TEXT NOT NULL DEFAULT '', is_reviewed INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL, updated_at TEXT NOT NULL)`,
+    `CREATE TABLE IF NOT EXISTS inbox_items (id TEXT PRIMARY KEY, sync_code TEXT NOT NULL, title TEXT NOT NULL DEFAULT '', url TEXT, notes TEXT, attachments TEXT, category TEXT NOT NULL DEFAULT '', is_reviewed INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL, updated_at TEXT NOT NULL)`,
   ];
   for (const sql of sgTables) await sg.exec(sql);
+  // Migration: add attachments column if it doesn't exist yet
+  try { await sg.exec(`ALTER TABLE inbox_items ADD COLUMN attachments TEXT`); } catch (_) { /* already exists */ }
 
   const p = env.PARENTING_DB;
   const pTables = [
@@ -198,12 +200,12 @@ async function handleSelfGrowth(request, env, path, method, syncCode) {
   if (path === '/api/self-growth/inbox') {
     if (method === 'GET') {
       const { results } = await db.prepare('SELECT * FROM inbox_items WHERE sync_code = ? ORDER BY created_at DESC').bind(syncCode).all();
-      return json(results.map(r => ({ id: r.id, title: r.title, url: r.url, notes: r.notes, category: r.category, isReviewed: r.is_reviewed === 1, createdAt: r.created_at })));
+      return json(results.map(r => ({ id: r.id, title: r.title, url: r.url, notes: r.notes, attachments: r.attachments ? JSON.parse(r.attachments) : undefined, category: r.category, isReviewed: r.is_reviewed === 1, createdAt: r.created_at })));
     }
     if (method === 'POST') {
       const b = await request.json();
       const createdAt = b.createdAt || now();
-      await db.prepare('INSERT OR REPLACE INTO inbox_items (id, sync_code, title, url, notes, category, is_reviewed, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)').bind(b.id, syncCode, b.title ?? '', b.url ?? null, b.notes ?? null, b.category ?? '', b.isReviewed ? 1 : 0, createdAt, now()).run();
+      await db.prepare('INSERT OR REPLACE INTO inbox_items (id, sync_code, title, url, notes, attachments, category, is_reviewed, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').bind(b.id, syncCode, b.title ?? '', b.url ?? null, b.notes ?? null, b.attachments ? JSON.stringify(b.attachments) : null, b.category ?? '', b.isReviewed ? 1 : 0, createdAt, now()).run();
       return json({ ok: true });
     }
     if (method === 'DELETE') {
