@@ -284,6 +284,11 @@ export default function TechoGrid({
   onSaveWeeklySummary,
   weekOffset = 0,
 }: TechoGridProps) {
+
+  // Cover card: background image + edition label editable
+  const [coverBg, setCoverBg] = React.useState<string>(() => localStorage.getItem('techo_cover_bg') || '');
+  const [editingEdition, setEditingEdition] = React.useState(false);
+  const [editionLabel, setEditionLabel] = React.useState<string>(() => localStorage.getItem('techo_edition_label') || '');
   // Dynamic current week calculation
   const today = new Date();
   const currentYear = String(today.getFullYear());
@@ -737,7 +742,10 @@ export default function TechoGrid({
       {/* LEFT COLUMN: Mini Calendar & Stats Info (3-cols on lg) */}
       <div className="lg:col-span-3 flex flex-col gap-4">
         {/* Paper Planner Cover Badge */}
-        <div className="bg-[#f5f3e9] border border-[#d6cfbe] p-4 rounded-lg flex flex-col items-center justify-center text-center relative overflow-hidden shadow-xs">
+        <div
+          className="border border-[#d6cfbe] p-4 rounded-lg flex flex-col items-center justify-center text-center relative overflow-hidden shadow-xs group"
+          style={coverBg ? { backgroundImage: `url(${coverBg})`, backgroundSize: 'cover', backgroundPosition: 'center' } : { background: '#f5f3e9' }}
+        >
           {/* Subtle perforations on the top */}
           <div className="absolute top-0 left-0 right-0 h-1 flex justify-around px-4">
             <div className="w-1.5 h-1.5 rounded-full bg-[#cbd5e1] -mt-0.5" />
@@ -745,14 +753,61 @@ export default function TechoGrid({
             <div className="w-1.5 h-1.5 rounded-full bg-[#cbd5e1] -mt-0.5" />
             <div className="w-1.5 h-1.5 rounded-full bg-[#cbd5e1] -mt-0.5" />
           </div>
-          <div className="font-display tracking-[0.25em] text-md font-bold text-[#8a8069] mt-1 uppercase">
+
+          {/* Cover bg upload button — top right, visible on hover */}
+          <label
+            className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer bg-black/40 hover:bg-black/60 text-white rounded-md px-1.5 py-0.5 text-[9px] font-bold"
+            title="上传封面背景图"
+          >
+            🖼
+            <input type="file" accept="image/*" className="hidden" onChange={e => {
+              const file = e.target.files?.[0];
+              if (!file) return;
+              const reader = new FileReader();
+              reader.onload = ev => {
+                const url = ev.target?.result as string;
+                setCoverBg(url);
+                localStorage.setItem('techo_cover_bg', url);
+              };
+              reader.readAsDataURL(file);
+            }} />
+          </label>
+
+          {/* Clear bg button */}
+          {coverBg && (
+            <button
+              onClick={() => { setCoverBg(''); localStorage.removeItem('techo_cover_bg'); }}
+              className="absolute top-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity bg-black/40 hover:bg-black/60 text-white rounded-md px-1.5 py-0.5 text-[9px] font-bold cursor-pointer"
+              title="移除背景图"
+            >✕</button>
+          )}
+
+          <div className={`font-display tracking-[0.25em] text-md font-bold mt-1 uppercase ${coverBg ? 'text-white drop-shadow' : 'text-[#8a8069]'}`}>
             JIBUN TECHO
           </div>
-          <div className="h-[2px] w-12 bg-[#8a8069]/30 my-1"></div>
-          <div className="text-xs text-[#8a816b] font-mono">自我成长手帐 {currentYear}</div>
-          <div className="text-[10px] bg-[#8a816b]/10 text-[#8a816b] px-2 py-0.5 rounded-full font-mono font-bold mt-1.5 uppercase tracking-wider">
-            ✍️ {username}'s Edition
-          </div>
+          <div className={`h-[2px] w-12 my-1 ${coverBg ? 'bg-white/40' : 'bg-[#8a8069]/30'}`}></div>
+          <div className={`text-xs font-mono ${coverBg ? 'text-white/90 drop-shadow' : 'text-[#8a816b]'}`}>自我成长手帐 {currentYear}</div>
+
+          {/* Edition label — double click to edit */}
+          {editingEdition ? (
+            <input
+              autoFocus
+              value={editionLabel}
+              onChange={e => setEditionLabel(e.target.value)}
+              onBlur={() => { setEditingEdition(false); localStorage.setItem('techo_edition_label', editionLabel); }}
+              onKeyDown={e => { if (e.key === 'Enter' || e.key === 'Escape') { setEditingEdition(false); localStorage.setItem('techo_edition_label', editionLabel); } }}
+              placeholder={`${username}'s Edition`}
+              className="mt-1.5 text-[10px] font-mono font-bold text-center bg-white/80 border border-white/60 rounded-full px-2 py-0.5 outline-none w-32"
+            />
+          ) : (
+            <div
+              className={`text-[10px] px-2 py-0.5 rounded-full font-mono font-bold mt-1.5 uppercase tracking-wider cursor-text ${coverBg ? 'bg-black/30 text-white' : 'bg-[#8a816b]/10 text-[#8a816b]'}`}
+              onDoubleClick={() => setEditingEdition(true)}
+              title="双击编辑署名"
+            >
+              ✍️ {editionLabel || `${username}'s Edition`}
+            </div>
+          )}
         </div>
 
         {/* Mini Calendar UI */}
