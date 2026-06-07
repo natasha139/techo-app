@@ -9,16 +9,14 @@ import {
   CalendarHeart,
   Sparkles,
   BookOpen,
-  Ruler,
-  Scale,
-  Clock,
   Heart,
   PlusCircle,
   FileText,
   ClipboardList,
   Library,
   Star,
-  ExternalLink
+  ExternalLink,
+  Link2
 } from 'lucide-react';
 import { ChildMilestone, ChildDiary, ChildDailyLog, ParentingResource } from '../types';
 
@@ -85,14 +83,14 @@ export default function ParentingSection({
   const [dDate, setDDate] = useState('2026-06-04');
   const [dContent, setDContent] = useState('');
   const [dMood, setDMood] = useState('🥰 乖巧可爱');
-  const [dHeight, setDHeight] = useState('');
-  const [dWeight, setDWeight] = useState('');
 
-  // Daily log input states
-  const [lTime, setLTime] = useState('08:00');
-  const [lType, setLType] = useState<ChildDailyLog['type']>('notes');
-  const [lSpec, setLSpec] = useState('');
-  const [lNotes, setLNotes] = useState('');
+  // Growth links input states
+  const [linkTitle, setLinkTitle] = useState('');
+  const [linkUrl, setLinkUrl] = useState('');
+  const [linkNote, setLinkNote] = useState('');
+  const [links, setLinks] = useState<{ id: string; title: string; url: string; note: string }[]>(() => {
+    try { return JSON.parse(localStorage.getItem('techo_growth_links') || '[]'); } catch { return []; }
+  });
 
   // Resource input states
   const [rName, setRName] = useState('');
@@ -110,13 +108,19 @@ export default function ParentingSection({
     setRName(''); setRSubject(''); setRNotes(''); setRUrl(''); setRRating(0);
   };
 
-  const submitLog = (e: React.FormEvent) => {
+  const submitLink = (e: React.FormEvent) => {
     e.preventDefault();
-    if (lNotes.trim()) {
-      onAddChildLog({ time: lTime, type: lType, spec: lSpec.trim(), notes: lNotes.trim() });
-      setLNotes('');
-      setLSpec('');
-    }
+    if (!linkUrl.trim()) return;
+    const updated = [...links, { id: `lnk_${Date.now()}`, title: linkTitle.trim() || linkUrl, url: linkUrl.trim(), note: linkNote.trim() }];
+    setLinks(updated);
+    localStorage.setItem('techo_growth_links', JSON.stringify(updated));
+    setLinkTitle(''); setLinkUrl(''); setLinkNote('');
+  };
+
+  const deleteLink = (id: string) => {
+    const updated = links.filter(l => l.id !== id);
+    setLinks(updated);
+    localStorage.setItem('techo_growth_links', JSON.stringify(updated));
   };
 
   const submitMilestone = (e: React.FormEvent) => {
@@ -140,13 +144,9 @@ export default function ParentingSection({
         date: dDate,
         content: dContent.trim(),
         mood: dMood,
-        height: dHeight.trim() || undefined,
-        weight: dWeight.trim() || undefined
       });
       setDTitle('');
       setDContent('');
-      setDHeight('');
-      setDWeight('');
     }
   };
 
@@ -188,8 +188,8 @@ export default function ParentingSection({
                 : 'bg-gray-100/70 border-transparent text-gray-500 hover:bg-gray-100 hover:text-gray-700'
             }`}
           >
-            <ClipboardList size={13} />
-            <span>日常记录</span>
+            <Link2 size={13} />
+            <span>成长档案</span>
           </button>
           <button
             type="button"
@@ -557,72 +557,66 @@ export default function ParentingSection({
             <div className="animate-fade-in flex flex-col h-full flex-1">
               <div className="flex items-center justify-between border-b-2 border-[#eae6d8] pb-3 mb-6 select-none">
                 <h3 className="font-display font-bold text-[#48453f] text-sm flex items-center gap-2">
-                  <ClipboardList size={18} className="text-techo-pink" />
-                  宝宝每日生活记录 (Daily Log)
+                  <Link2 size={18} className="text-techo-pink" />
+                  成长档案链接 (Growth Records)
                 </h3>
-                <span className="text-[10px] text-techo-pink font-bold font-mono">DAILY TRACKER</span>
+                <span className="text-[10px] text-techo-pink font-bold font-mono">LINKED FILES</span>
               </div>
 
-              <form onSubmit={submitLog} className="bg-pink-50/20 border border-pink-100 p-4 rounded-md mb-6 space-y-3">
+              <form onSubmit={submitLink} className="bg-pink-50/20 border border-pink-100 p-4 rounded-md mb-6 space-y-3">
                 <h4 className="text-xs font-bold text-techo-pink flex items-center gap-1">
-                  <PlusCircle size={13} /> 新增记录
+                  <PlusCircle size={13} /> 添加档案链接
                 </h4>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
                   <div>
-                    <label className="block text-[10px] font-bold text-gray-500 mb-1">时间</label>
-                    <input type="time" value={lTime} onChange={e => setLTime(e.target.value)}
-                      className="w-full bg-white border border-[#c2bdae] p-2 rounded text-xs focus:outline-none focus:ring-1 focus:ring-pink-400" />
-                  </div>
-                  <div>
-                    <label className="block text-[10px] font-bold text-gray-500 mb-1">类型</label>
-                    <select value={lType} onChange={e => setLType(e.target.value as ChildDailyLog['type'])}
-                      className="w-full bg-white border border-[#c2bdae] p-2 rounded text-xs focus:outline-none focus:ring-1 focus:ring-pink-400">
-                    <option value="feeding">🍱 饮食</option>
-                      <option value="sleep">😴 睡眠</option>
-                      <option value="activity">📚 学习/活动</option>
-                      <option value="notes">📝 备注</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-[10px] font-bold text-gray-500 mb-1">规格（可选）</label>
-                    <input type="text" value={lSpec} onChange={e => setLSpec(e.target.value)}
-                      placeholder="如: 150ml / 2h"
-                      className="w-full bg-white border border-[#c2bdae] p-2 rounded text-xs focus:outline-none focus:ring-1 focus:ring-pink-400" />
-                  </div>
-                  <div>
-                    <label className="block text-[10px] font-bold text-gray-500 mb-1">备注</label>
-                    <input type="text" value={lNotes} onChange={e => setLNotes(e.target.value)}
-                      placeholder="简短描述..."
+                    <label className="block text-[10px] font-bold text-gray-500 mb-1">链接地址 *</label>
+                    <input type="url" value={linkUrl} onChange={e => setLinkUrl(e.target.value)}
+                      placeholder="https://docs.google.com/..."
                       className="w-full bg-white border border-[#c2bdae] p-2 rounded text-xs focus:outline-none focus:ring-1 focus:ring-pink-400"
                       required />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-gray-500 mb-1">标题（可选）</label>
+                    <input type="text" value={linkTitle} onChange={e => setLinkTitle(e.target.value)}
+                      placeholder="如: 身高体重记录表"
+                      className="w-full bg-white border border-[#c2bdae] p-2 rounded text-xs focus:outline-none focus:ring-1 focus:ring-pink-400" />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-gray-500 mb-1">备注（可选）</label>
+                    <input type="text" value={linkNote} onChange={e => setLinkNote(e.target.value)}
+                      placeholder="Excel / 体检报告 / 视力..."
+                      className="w-full bg-white border border-[#c2bdae] p-2 rounded text-xs focus:outline-none focus:ring-1 focus:ring-pink-400" />
                   </div>
                 </div>
                 <button type="submit"
                   className="w-full py-2 bg-techo-pink hover:bg-[#bd6372] text-white text-xs font-bold rounded cursor-pointer transition-colors">
-                  + 记录
+                  + 保存链接
                 </button>
               </form>
 
               <div className="space-y-2 overflow-y-auto max-h-[350px] pr-1 flex-1">
-                {childLogs.length === 0 ? (
-                  <div className="text-center py-12">
-                    <p className="italic text-gray-400 text-xs">暂无每日记录</p>
+                {links.length === 0 ? (
+                  <div className="text-center py-12 text-gray-400 text-xs">
+                    <Link2 size={24} className="mx-auto mb-2 opacity-20" />
+                    <p>还没有档案链接，把 Excel 或文档链接粘贴进来吧</p>
                   </div>
                 ) : (
-                  childLogs.map(log => (
-                    <div key={log.id} className="flex items-start gap-3 bg-white border border-[#e8e4da] rounded-md px-3 py-2 group hover:border-pink-200 transition-colors">
-                      <span className="font-mono text-[11px] text-[#8a816c] shrink-0 pt-0.5">{log.time}</span>
+                  links.map(l => (
+                    <div key={l.id} className="flex items-center gap-3 bg-white border border-[#e8e4da] rounded-md px-3 py-2.5 group hover:border-pink-200 transition-colors">
+                      <Link2 size={13} className="text-techo-pink shrink-0" />
                       <div className="flex-1 min-w-0">
-                        <span className="text-[10px] font-bold text-techo-pink mr-2">{
-                          log.type === 'feeding' ? '🍱 饮食' :
-                          log.type === 'sleep' ? '😴 睡眠' :
-                          log.type === 'activity' ? '📚 学习/活动' : '📝 备注'
-                        }</span>
-                        {log.spec && <span className="text-[10px] text-gray-400 mr-2">[{log.spec}]</span>}
-                        <span className="text-xs text-[#524c3e]">{log.notes}</span>
+                        <a href={l.url} target="_blank" rel="noopener noreferrer"
+                          className="text-xs font-bold text-techo-pink hover:underline truncate block">
+                          {l.title || l.url}
+                        </a>
+                        {l.note && <p className="text-[10px] text-gray-400 mt-0.5">{l.note}</p>}
                       </div>
-                      <button onClick={() => onDeleteChildLog(log.id)}
-                        className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 cursor-pointer p-1 transition-all shrink-0">
+                      <a href={l.url} target="_blank" rel="noopener noreferrer"
+                        className="text-gray-300 hover:text-techo-pink transition-colors shrink-0 p-1">
+                        <ExternalLink size={11} />
+                      </a>
+                      <button onClick={() => deleteLink(l.id)}
+                        className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-400 cursor-pointer p-1 transition-all shrink-0">
                         <Trash2 size={11} />
                       </button>
                     </div>
