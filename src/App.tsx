@@ -75,6 +75,7 @@ import D1Console from './components/D1Console';
 import DiarySection from './components/DiarySection';
 import InboxSection from './components/InboxSection';
 import FitnessSection from './components/FitnessSection';
+import ProjectNav from './components/ProjectNav';
 
 export const TECH_THEMES = [
   {
@@ -887,6 +888,7 @@ export default function App() {
   return (
     <>
       {!syncCode && <SyncModal onSuccess={handleSyncLogin} />}
+      <ProjectNav current="techo" />
     <div
       style={themeStyles}
       className={`min-h-screen py-4 px-2 sm:px-6 flex flex-col ${selectedFontClass} select-none antialiased md:py-6 transition-colors duration-500`}
