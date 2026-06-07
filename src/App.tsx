@@ -298,6 +298,35 @@ export default function App() {
   const [username, setUsername] = useState<string>(() => localStorage.getItem('techo_username') || 'Natasha');
   const [appTitle, setAppTitle] = useState<string>(() => localStorage.getItem('techo_app_title') || '自我手帐');
   const [avatarUrl, setAvatarUrl] = useState<string>(() => localStorage.getItem('techo_avatar') || '');
+
+  // Daily quote
+  const QUOTES = [
+    '种一棵树最好的时间是十年前，其次是现在。',
+    '你不需要看到整段楼梯，只需要迈出第一步。',
+    '慢慢来，比较快。',
+    '每一个你所羡慕的结果，背后都有你看不见的坚持。',
+    '不是因为有希望才坚持，而是坚持了才有希望。',
+    '生活不是等待风暴过去，而是学会在雨中起舞。',
+    '你今天的努力，是明天最好的铺垫。',
+    '成长是一件安静的事，不必声张。',
+    '把每一天都活成你最想要的样子。',
+    '做一个有温度的人，温暖自己，也温暖别人。',
+    '专注当下，其余的自会到来。',
+    '你已经比昨天的自己更好了。',
+    'The secret of getting ahead is getting started.',
+    'Small steps every day lead to big changes.',
+    'Be the energy you want to attract.',
+    'Progress, not perfection.',
+  ];
+  const todayQuoteIdx = new Date().getDate() % QUOTES.length;
+  const [customQuote, setCustomQuote] = useState<string>(() => {
+    const saved = localStorage.getItem('techo_quote');
+    if (!saved) return '';
+    try { const p = JSON.parse(saved); return p.date === new Date().toISOString().slice(0,10) ? p.text : ''; } catch { return ''; }
+  });
+  const [editingQuote, setEditingQuote] = useState(false);
+  const [quoteInput, setQuoteInput] = useState('');
+  const displayQuote = customQuote || QUOTES[todayQuoteIdx];
   const [appSubtitle, setAppSubtitle] = useState<string>(() => localStorage.getItem('techo_app_subtitle') || 'Self-Growth Hand Planner • inspired by Kokuyo');
   const [editingTitle, setEditingTitle] = useState(false);
   const [editingSubtitle, setEditingSubtitle] = useState(false);
@@ -1190,6 +1219,55 @@ export default function App() {
             </div>
           </div>
         )}
+
+        {/* DAILY QUOTE BANNER */}
+        <div className="bg-white border border-[#d3cfc3] rounded-lg px-5 py-3 shadow-xs flex items-center gap-3 min-h-[52px]">
+          <span className="text-lg select-none shrink-0">✨</span>
+          {editingQuote ? (
+            <div className="flex-1 flex gap-2 items-center">
+              <input
+                autoFocus
+                type="text"
+                value={quoteInput}
+                onChange={e => setQuoteInput(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter') {
+                    const text = quoteInput.trim();
+                    setCustomQuote(text);
+                    if (text) localStorage.setItem('techo_quote', JSON.stringify({ date: new Date().toISOString().slice(0,10), text }));
+                    else localStorage.removeItem('techo_quote');
+                    setEditingQuote(false);
+                  }
+                  if (e.key === 'Escape') setEditingQuote(false);
+                }}
+                placeholder="输入你今天的座右铭或励志语..."
+                className="flex-1 text-sm text-[#48453f] bg-transparent border-b border-techo-teal outline-none font-sans italic"
+              />
+              <button onClick={() => {
+                const text = quoteInput.trim();
+                setCustomQuote(text);
+                if (text) localStorage.setItem('techo_quote', JSON.stringify({ date: new Date().toISOString().slice(0,10), text }));
+                else localStorage.removeItem('techo_quote');
+                setEditingQuote(false);
+              }} className="text-[10px] px-2 py-1 bg-techo-teal text-white rounded cursor-pointer font-bold">保存</button>
+              <button onClick={() => setEditingQuote(false)} className="text-[10px] px-2 py-1 border border-gray-200 rounded cursor-pointer text-gray-400">取消</button>
+            </div>
+          ) : (
+            <>
+              <p className="flex-1 text-sm text-[#48453f] italic font-medium leading-snug">{displayQuote}</p>
+              <button
+                onClick={() => { setQuoteInput(customQuote); setEditingQuote(true); }}
+                className="shrink-0 text-[10px] text-gray-300 hover:text-techo-teal transition-colors cursor-pointer px-1.5 py-1 rounded hover:bg-techo-teal/5"
+                title="自定义今日语句"
+              >✏️ 自定义</button>
+              {customQuote && (
+                <button onClick={() => { setCustomQuote(''); localStorage.removeItem('techo_quote'); }}
+                  className="shrink-0 text-[10px] text-gray-300 hover:text-red-400 transition-colors cursor-pointer px-1"
+                  title="恢复每日自动语句">↺</button>
+              )}
+            </>
+          )}
+        </div>
 
         {/* YEAR OR MONTH SIMULATED PLAN OVERLAYS */}
         {subHeaderTab !== 'week' && (
