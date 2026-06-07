@@ -216,7 +216,7 @@ export default function ParentingSection({
         </div>
 
         <div className="pl-6 flex flex-col h-full flex-1">
-          {subTab === 'milestones' ? (
+          {subTab === 'milestones' && (
             <div className="animate-fade-in flex flex-col h-full flex-1">
               <div className="flex items-center justify-between border-b-2 border-[#eae6d8] pb-3 mb-6 select-none">
                 <h3 className="font-display font-bold text-[#48453f] text-sm flex items-center gap-2">
@@ -314,7 +314,9 @@ export default function ParentingSection({
                 )}
               </div>
             </div>
-          ) : (
+          )}
+
+          {subTab === 'diaries' && (
             <div className="animate-fade-in flex flex-col h-full flex-1">
               <div className="flex items-center justify-between border-b-2 border-[#eae6d8] pb-3 mb-6 select-none">
                 <h3 className="font-display font-bold text-[#48453f] text-sm flex items-center gap-2">
@@ -364,32 +366,6 @@ export default function ParentingSection({
                       ))}
                     </select>
                   </div>
-                  <div>
-                    <label className="block text-[10px] font-bold text-gray-500 mb-1">身高 / Height (可选)</label>
-                    <div className="relative">
-                      <input
-                        type="text"
-                        value={dHeight}
-                        onChange={e => setDHeight(e.target.value)}
-                        placeholder="例如: 75.2"
-                        className="w-full bg-white border border-[#c2bdae] py-2 pl-2 pr-7 rounded font-sans text-xs focus:outline-none focus:ring-1 focus:ring-pink-400"
-                      />
-                      <span className="absolute right-2 top-2 text-[9px] text-gray-400 font-bold">cm</span>
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-[10px] font-bold text-gray-500 mb-1">体重 / Weight (可选)</label>
-                    <div className="relative">
-                      <input
-                        type="text"
-                        value={dWeight}
-                        onChange={e => setDWeight(e.target.value)}
-                        placeholder="例如: 10.3"
-                        className="w-full bg-white border border-[#c2bdae] py-2 pl-2 pr-7 rounded font-sans text-xs focus:outline-none focus:ring-1 focus:ring-pink-400"
-                      />
-                      <span className="absolute right-2 top-2 text-[9px] text-gray-400 font-bold">kg</span>
-                    </div>
-                  </div>
 
                   <div className="sm:col-span-3">
                     <label className="block text-[10px] font-bold text-gray-500 mb-1">日记暖心正文 (Content Description)</label>
@@ -438,24 +414,6 @@ export default function ParentingSection({
                               {diary.mood}
                             </span>
                           </div>
-
-                          {/* Stat indicators if present */}
-                          {(diary.height || diary.weight) && (
-                            <div className="flex gap-3 mb-2.5 text-[10px] text-gray-500 font-mono">
-                              {diary.height && (
-                                <span className="flex items-center gap-1 bg-gray-100/70 border border-gray-200 px-1.5 py-0.5 rounded">
-                                  <Ruler size={10} className="text-gray-400" />
-                                  <span>身高: {diary.height.endsWith('cm') ? diary.height : `${diary.height} cm`}</span>
-                                </span>
-                              )}
-                              {diary.weight && (
-                                <span className="flex items-center gap-1 bg-gray-100/70 border border-gray-200 px-1.5 py-0.5 rounded">
-                                  <Scale size={10} className="text-gray-400" />
-                                  <span>体重: {diary.weight.endsWith('kg') ? diary.weight : `${diary.weight} kg`}</span>
-                                </span>
-                              )}
-                            </div>
-                          )}
 
                           {/* Main diary content in simulated beautiful notebook lines */}
                           <p className="text-xs text-[#524c3e] leading-relaxed break-all bg-dashed-lines pl-1">
