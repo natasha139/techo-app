@@ -775,9 +775,19 @@ export default function TechoGrid({
               if (!file) return;
               const reader = new FileReader();
               reader.onload = ev => {
-                const url = ev.target?.result as string;
-                setCoverBg(url);
-                onSaveSetting?.('cover_bg', url);
+                const img = new Image();
+                img.onload = () => {
+                  const MAX = 600;
+                  const scale = Math.min(1, MAX / Math.max(img.width, img.height));
+                  const canvas = document.createElement('canvas');
+                  canvas.width = Math.round(img.width * scale);
+                  canvas.height = Math.round(img.height * scale);
+                  canvas.getContext('2d')!.drawImage(img, 0, 0, canvas.width, canvas.height);
+                  const url = canvas.toDataURL('image/jpeg', 0.75);
+                  setCoverBg(url);
+                  onSaveSetting?.('cover_bg', url);
+                };
+                img.src = ev.target?.result as string;
               };
               reader.readAsDataURL(file);
             }} />
