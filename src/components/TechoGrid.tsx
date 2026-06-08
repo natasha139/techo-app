@@ -157,7 +157,7 @@ const GridCell = React.memo(({
 
       {cell && !isDragOver && (
         <div className="w-full h-full relative flex flex-col justify-between animate-cell-pop">
-          <span className="font-medium inline-block select-text break-words">
+          <span className="text-[9px] font-medium leading-tight inline-block select-text break-words w-full">
             {cell.text}
           </span>
           <div className="flex justify-between items-center select-none mt-0.5">
@@ -949,8 +949,8 @@ export default function TechoGrid({
                 </div>
               </div>
 
-              <div className="pt-1.5 border-t border-dashed border-[#eae6d8] text-[9.5px] text-[#a59d8c] flex items-start gap-1">
-                <span className="text-techo-teal font-black">💡 双联动:</span>
+              <div className="pt-1.5 border-t border-dashed border-[#eae6d8] text-[9.5px] text-[#a59d8c] flex items-start gap-1.5">
+                <span className="text-techo-teal font-black shrink-0 whitespace-nowrap">💡 双联动:</span>
                 <p className="leading-normal">
                   点击日历日期或<b>右侧周表头</b>皆可切换。若选中1~7号(第一周)，点击保存也会动态呈现在右下角！
                 </p>
