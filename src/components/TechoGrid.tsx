@@ -904,13 +904,13 @@ export default function TechoGrid({
 
             {/* Selected Day Quick Memo & Instructions */}
             <div className="mt-4 p-3 border-2 border-[#eae6d8] rounded-md bg-[#fafaf6] text-[11px] text-[#7d7768] space-y-2">
-              <div className="flex items-center justify-between border-b border-[#eae6d8] pb-1.5">
-                <span className="font-display font-black text-xs text-[#4a473e] flex items-center gap-1 leading-none">
+              <div className="flex items-center justify-between border-b border-[#eae6d8] pb-1.5 gap-2">
+                <span className="font-display font-black text-xs text-[#4a473e] flex items-center gap-1 leading-none min-w-0 truncate">
                   📅 {currentMonthNum}月{selectedDay}日 • {
                     (() => { const idx = daysOfWeek.findIndex(d => d._date.getDate() === selectedDay && d._date.getMonth() === today.getMonth()); return idx >= 0 ? `${daysOfWeek[idx].text}便签` : '日面快记/Memo'; })()
                   }
                 </span>
-                <span className="text-[9px] bg-techo-teal/15 text-techo-teal font-sans px-1 rounded-sm font-bold scale-95 origin-right">
+                <span className="text-[9px] bg-techo-teal/15 text-techo-teal font-sans px-1 rounded-sm font-bold shrink-0 whitespace-nowrap">
                   {daysOfWeek.some(d => d._date.getDate() === selectedDay && d._date.getMonth() === today.getMonth()) ? '✨ 周视图联动' : '💭 自由写本'}
                 </span>
               </div>
