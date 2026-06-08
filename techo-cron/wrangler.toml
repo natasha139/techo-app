@@ -1,0 +1,11 @@
+name = "techo-cron"
+main = "index.js"
+compatibility_date = "2024-12-01"
+
+[triggers]
+crons = ["0 0 * * *"]
+
+[[d1_databases]]
+binding = "GENERAL_DB"
+database_name = "techo-general"
+database_id = "dc86d6a1-5936-487c-80b2-a01aed79e43c"

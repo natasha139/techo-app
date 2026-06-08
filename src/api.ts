@@ -132,6 +132,11 @@ export const api = {
     upsert: (sc: string, item: any) => apiFetch('/api/general/media-notes', { method: 'POST', body: JSON.stringify(item) }, sc),
     delete: (sc: string, id: string) => apiFetch(`/api/general/media-notes?id=${id}`, { method: 'DELETE' }, sc),
   },
+  reminders: {
+    list: (sc: string) => apiFetch('/api/general/reminders', {}, sc),
+    upsert: (sc: string, item: any) => apiFetch('/api/general/reminders', { method: 'POST', body: JSON.stringify(item) }, sc),
+    delete: (sc: string, id: string) => apiFetch(`/api/general/reminders?id=${id}`, { method: 'DELETE' }, sc),
+  },
   settings: {
     getAll: (sc: string) => apiFetch('/api/general/settings', {}, sc),
     set: (sc: string, data: Record<string, string>) => apiFetch('/api/general/settings', { method: 'POST', body: JSON.stringify(data) }, sc),

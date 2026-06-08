@@ -67,6 +67,7 @@ async function initSchemas(env) {
     `CREATE TABLE IF NOT EXISTS fitness_logs (id TEXT PRIMARY KEY, sync_code TEXT NOT NULL, date TEXT NOT NULL DEFAULT '', weight REAL, exercise TEXT, duration INTEGER, calories INTEGER, meals TEXT, note TEXT, updated_at TEXT NOT NULL)`,
     `CREATE TABLE IF NOT EXISTS settings (sync_code TEXT NOT NULL, key TEXT NOT NULL, value TEXT NOT NULL DEFAULT '', updated_at TEXT NOT NULL, PRIMARY KEY (sync_code, key))`,
     `CREATE TABLE IF NOT EXISTS media_notes (id TEXT PRIMARY KEY, sync_code TEXT NOT NULL, text TEXT NOT NULL DEFAULT '', created_at TEXT NOT NULL, updated_at TEXT NOT NULL)`,
+    `CREATE TABLE IF NOT EXISTS reminders (id TEXT PRIMARY KEY, sync_code TEXT NOT NULL, title TEXT NOT NULL DEFAULT '', date TEXT NOT NULL DEFAULT '', advance_days INTEGER NOT NULL DEFAULT 1, note TEXT NOT NULL DEFAULT '', is_done INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL, updated_at TEXT NOT NULL)`,
   ];
   for (const sql of gTables) await g.exec(sql);
 }
@@ -443,6 +444,23 @@ async function handleGeneral(request, env, path, method, syncCode) {
     if (method === 'DELETE') {
       const key = new URL(request.url).searchParams.get('key');
       await db.prepare('DELETE FROM settings WHERE sync_code = ? AND key = ?').bind(syncCode, key).run();
+      return json({ ok: true });
+    }
+  }
+
+  if (path === '/api/general/reminders') {
+    if (method === 'GET') {
+      const { results } = await db.prepare('SELECT * FROM reminders WHERE sync_code = ? ORDER BY date ASC').bind(syncCode).all();
+      return json(results.map(r => ({ id: r.id, title: r.title, date: r.date, advanceDays: r.advance_days, note: r.note, isDone: r.is_done === 1, createdAt: r.created_at })));
+    }
+    if (method === 'POST') {
+      const b = await request.json();
+      await db.prepare('INSERT OR REPLACE INTO reminders (id, sync_code, title, date, advance_days, note, is_done, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)').bind(b.id, syncCode, b.title ?? '', b.date ?? '', b.advanceDays ?? 1, b.note ?? '', b.isDone ? 1 : 0, b.createdAt || now(), now()).run();
+      return json({ ok: true });
+    }
+    if (method === 'DELETE') {
+      const id = new URL(request.url).searchParams.get('id');
+      await db.prepare('DELETE FROM reminders WHERE id = ? AND sync_code = ?').bind(id, syncCode).run();
       return json({ ok: true });
     }
   }

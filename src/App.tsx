@@ -5,6 +5,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
+  Bell,
   Calendar,
   Sparkles,
   CheckCircle2,
@@ -75,6 +76,7 @@ import D1Console from './components/D1Console';
 import DiarySection from './components/DiarySection';
 import InboxSection from './components/InboxSection';
 import FitnessSection from './components/FitnessSection';
+import RemindersSection, { Reminder } from './components/RemindersSection';
 // import ProjectNav from './components/ProjectNav'; // replaced by inline strip in header
 
 export const TECH_THEMES = [
@@ -357,7 +359,7 @@ export default function App() {
   };
 
   // -- MAIN CONTENT TAB SELECTOR --
-  const [activeTab, setActiveTab] = useState<'week' | 'self_growth' | 'work' | 'hobby' | 'media' | 'parenting' | 'diary' | 'inbox' | 'fitness' | 'database'>('week');
+  const [activeTab, setActiveTab] = useState<'week' | 'self_growth' | 'work' | 'hobby' | 'media' | 'parenting' | 'diary' | 'inbox' | 'fitness' | 'reminders' | 'database'>('week');
   const [weekPlan, setWeekPlan] = useState<'mine' | 'baby'>('mine');
   const [weekOffset, setWeekOffset] = useState<number>(0); // 0=当周, 1=下周, 2=下下周...
   const babyTodayNotesDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -385,6 +387,8 @@ export default function App() {
   const [growthLinks, setGrowthLinks] = useState<any[]>([]);
   const [mediaNotes, setMediaNotes] = useState<any[]>([]);
   const [inboxCustomCats, setInboxCustomCats] = useState<string[]>([]);
+  const [reminders, setReminders] = useState<Reminder[]>([]);
+  const [barkUrl, setBarkUrl] = useState<string>('');
   
   // Today's Notes local state for days Mon-Sun (Indices 0 - 6)
   const [todayNotes, setTodayNotes] = useState<{ [dayIndex: number]: string }>({
@@ -416,7 +420,7 @@ export default function App() {
         milestoneData, childLogData, childDiaryData,
         cellData, habitData, summaryData, financeData,
         inboxData, fitnessData, parentingResourceData, settingsData,
-        childGoalsData, growthLinksData, mediaNotesData,
+        childGoalsData, growthLinksData, mediaNotesData, remindersData,
       ] = await Promise.all([
         api.wishes.list(sc),
         api.skills.list(sc),
@@ -438,6 +442,7 @@ export default function App() {
         api.childGoals.list(sc),
         api.growthLinks.list(sc),
         api.mediaNotes.list(sc),
+        api.reminders.list(sc),
       ]);
 
       setWishes(wishData.map((w: any) => ({ id: w.id, order: w.ord, content: w.content, isCompleted: w.is_completed === 1, category: w.category })));
@@ -461,6 +466,7 @@ export default function App() {
       setChildGoals((childGoalsData || []).map((g: any) => ({ ...g, done: g.is_done === 1 || g.done === true })));
       setGrowthLinks(growthLinksData || []);
       setMediaNotes(mediaNotesData || []);
+      setReminders(remindersData || []);
 
       if (summaryData) {
         setWeeklySummary({ ...initialWeeklySummary, ...summaryData });
@@ -497,6 +503,7 @@ export default function App() {
         if (settingsData.inbox_custom_cats) {
           try { setInboxCustomCats(JSON.parse(settingsData.inbox_custom_cats)); } catch {}
         }
+        if (settingsData.bark_url) setBarkUrl(settingsData.bark_url);
       }
     } catch (e: any) {
       pushLog('error', `加载失败: ${e.message}`);
@@ -935,6 +942,30 @@ export default function App() {
   const handleDeleteChildGoal = (id: string) => {
     setChildGoals(prev => prev.filter(g => g.id !== id));
     apiCall(() => api.childGoals.delete(syncCode, id), 'child_goals');
+  };
+
+  // 16. Reminders
+  const handleAddReminder = (r: Omit<Reminder, 'id' | 'createdAt'>) => {
+    const item: Reminder = { ...r, id: `rem_${Date.now()}`, createdAt: new Date().toISOString() };
+    setReminders(prev => [...prev, item]);
+    apiCall(() => api.reminders.upsert(syncCode, item), 'reminders');
+  };
+
+  const handleToggleReminder = (id: string) => {
+    const updated = reminders.map(r => r.id === id ? { ...r, isDone: !r.isDone } : r);
+    setReminders(updated);
+    const item = updated.find(r => r.id === id)!;
+    apiCall(() => api.reminders.upsert(syncCode, item), 'reminders');
+  };
+
+  const handleDeleteReminder = (id: string) => {
+    setReminders(prev => prev.filter(r => r.id !== id));
+    apiCall(() => api.reminders.delete(syncCode, id), 'reminders');
+  };
+
+  const handleSaveBarkUrl = (url: string) => {
+    setBarkUrl(url);
+    saveSetting('bark_url', url);
   };
 
   // -- REAL D1 SYNC (reload from API) --
@@ -1523,6 +1554,23 @@ export default function App() {
               <span>健康・运动打卡</span>
             </button>
 
+            <button
+              onClick={() => setActiveTab('reminders')}
+              className={`w-full p-2 text-xs font-semibold rounded text-left flex items-center gap-2 transition-all cursor-pointer ${
+                activeTab === 'reminders'
+                  ? 'bg-white border-l-4 border-techo-teal text-[#333] shadow-xs font-bold'
+                  : 'text-[#6e685a] hover:bg-white/60 hover:text-black'
+              }`}
+            >
+              <Bell size={14} className="text-[#8a816c]" />
+              <span className="flex-1">计划提醒</span>
+              {reminders.filter(r => !r.isDone && r.date >= new Date().toISOString().split('T')[0]).length > 0 && (
+                <span className="text-[9px] font-bold bg-[#8a816c] text-white px-1 rounded-full leading-none py-0.5">
+                  {reminders.filter(r => !r.isDone && r.date >= new Date().toISOString().split('T')[0]).length}
+                </span>
+              )}
+            </button>
+
             <div className="h-[1px] bg-[#eae6d8] my-1.5" />
 
             <button
@@ -1729,6 +1777,17 @@ export default function App() {
                 onAdd={handleAddFitness}
                 onUpdate={handleUpdateFitness}
                 onDelete={handleDeleteFitness}
+              />
+            )}
+
+            {activeTab === 'reminders' && (
+              <RemindersSection
+                reminders={reminders}
+                barkUrl={barkUrl}
+                onAdd={handleAddReminder}
+                onToggle={handleToggleReminder}
+                onDelete={handleDeleteReminder}
+                onSaveBarkUrl={handleSaveBarkUrl}
               />
             )}
 
