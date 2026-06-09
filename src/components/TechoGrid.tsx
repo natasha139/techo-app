@@ -1052,7 +1052,7 @@ export default function TechoGrid({
                           <button
                             type="button"
                             onClick={() => onDeleteHabit(habit.id)}
-                            className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 text-red-500 hover:text-red-750 hover:bg-red-50 rounded cursor-pointer"
+                            className="p-0.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded cursor-pointer"
                             title={`删除习惯: ${habit.name}`}
                           >
                             <Trash2 size={11} strokeWidth={2.5} />
