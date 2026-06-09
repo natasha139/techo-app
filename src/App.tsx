@@ -25,7 +25,10 @@ import {
   Type,
   Key,
   Inbox,
-  Activity
+  Activity,
+  Flame,
+  Trash2,
+  Plus
 } from 'lucide-react';
 
 import {
@@ -77,6 +80,7 @@ import DiarySection from './components/DiarySection';
 import InboxSection from './components/InboxSection';
 import FitnessSection from './components/FitnessSection';
 import RemindersSection, { Reminder } from './components/RemindersSection';
+import HabitTrendChart from './components/HabitTrendChart';
 // import ProjectNav from './components/ProjectNav'; // replaced by inline strip in header
 
 export const TECH_THEMES = [
@@ -359,7 +363,7 @@ export default function App() {
   };
 
   // -- MAIN CONTENT TAB SELECTOR --
-  const [activeTab, setActiveTab] = useState<'week' | 'self_growth' | 'work' | 'hobby' | 'media' | 'parenting' | 'diary' | 'inbox' | 'fitness' | 'reminders' | 'database'>('week');
+  const [activeTab, setActiveTab] = useState<'week' | 'habits' | 'self_growth' | 'work' | 'hobby' | 'media' | 'parenting' | 'diary' | 'inbox' | 'fitness' | 'reminders' | 'database'>('week');
   const [weekPlan, setWeekPlan] = useState<'mine' | 'baby'>('mine');
   const [weekOffset, setWeekOffset] = useState<number>(0); // 0=当周, 1=下周, 2=下下周...
   const babyTodayNotesDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -624,6 +628,27 @@ export default function App() {
     apiCall(() => api.habits.delete(syncCode, id), 'habits',
       `DELETE FROM habits WHERE id = '${id}'`);
   };
+
+  // Habit streak calculation (used in sidebar badge + habits tab)
+  const dailyHabitStats = Array.from({ length: 7 }).map((_, dIdx) => {
+    const total = habits.length;
+    const done = habits.filter(h => h.history[dIdx] === true).length;
+    return { total, done, isDone: total > 0 && done > 0, ratio: total > 0 ? done / total : 0 };
+  });
+  const comboStreaks = (() => {
+    let run = 0;
+    const streaks = Array(7).fill(0);
+    for (let d = 0; d < 7; d++) {
+      if (dailyHabitStats[d].isDone) { run++; streaks[d] = run; } else { run = 0; }
+    }
+    const maxStreaks = [...streaks];
+    let currentMax = 0;
+    for (let d = 6; d >= 0; d--) {
+      if (streaks[d] > 0) { currentMax = Math.max(currentMax, streaks[d]); maxStreaks[d] = currentMax; }
+      else { currentMax = 0; }
+    }
+    return maxStreaks;
+  })();
 
   // 2. Wishes
   const handleToggleWish = (id: string) => {
@@ -1444,13 +1469,30 @@ export default function App() {
             <button
               onClick={() => setActiveTab('week')}
               className={`w-full p-2 text-xs font-semibold rounded text-left flex items-center gap-2 transition-all cursor-pointer ${
-                activeTab === 'week' 
-                  ? 'bg-white border-l-4 border-techo-teal text-[#333] shadow-xs font-bold' 
+                activeTab === 'week'
+                  ? 'bg-white border-l-4 border-techo-teal text-[#333] shadow-xs font-bold'
                   : 'text-[#6e685a] hover:bg-white/60 hover:text-black'
               }`}
             >
               <Calendar size={14} className="text-techo-blue" />
               <span>主周计划 (24H)</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('habits')}
+              className={`w-full p-2 text-xs font-semibold rounded text-left flex items-center gap-2 transition-all cursor-pointer ${
+                activeTab === 'habits'
+                  ? 'bg-white border-l-4 border-techo-teal text-[#333] shadow-xs font-bold'
+                  : 'text-[#6e685a] hover:bg-white/60 hover:text-black'
+              }`}
+            >
+              <Flame size={14} className={Math.max(0, ...comboStreaks) >= 3 ? 'text-amber-500' : 'text-[#a19c8d]'} />
+              <span className="flex-1">每日习惯追踪</span>
+              {Math.max(0, ...comboStreaks) > 0 && (
+                <span className="text-[9px] font-bold bg-amber-400/20 text-amber-700 px-1 rounded-full leading-none py-0.5">
+                  🔥{Math.max(0, ...comboStreaks)}
+                </span>
+              )}
             </button>
 
             <button
@@ -1677,6 +1719,125 @@ export default function App() {
                     onDeleteChildGoal={handleDeleteChildGoal}
                   />
                 )}
+              </div>
+            )}
+
+            {activeTab === 'habits' && (
+              <div className="bg-white border-2 border-[#d3cfc3] p-4 rounded-lg shadow-xs relative">
+                {/* Perforation holes */}
+                <div className="absolute top-0 bottom-0 left-0 w-2 flex flex-col justify-between py-4 -ml-1 pointer-events-none">
+                  {Array.from({ length: 8 }).map((_, i) => (
+                    <div key={i} className="w-1.5 h-1.5 rounded-full bg-[#e2dfd5] border border-white mx-auto shadow-inner" />
+                  ))}
+                </div>
+                <div className="pl-3">
+                  <div className="flex items-center justify-between mb-3 border-b-2 border-[#eae6d8] pb-2">
+                    <span className="font-display font-semibold text-[#4a473e] text-xs flex items-center gap-1.5">
+                      <Flame size={15} className={Math.max(0, ...comboStreaks) >= 3 ? 'text-amber-500 animate-pulse' : 'text-[#a19c8d]'} />
+                      <span>每日习惯追踪 / Habit Tracker</span>
+                    </span>
+                    {Math.max(0, ...comboStreaks) > 0 && (
+                      <span className="text-[10px] bg-amber-500/10 text-amber-700 px-2 py-0.5 rounded-full font-bold flex items-center gap-0.5 animate-bounce">
+                        🔥 {Math.max(0, ...comboStreaks)}连击
+                      </span>
+                    )}
+                  </div>
+
+                  <div className={`p-2.5 rounded text-[10.5px] leading-relaxed mb-3 ${
+                    Math.max(0, ...comboStreaks) >= 3
+                      ? 'bg-amber-500/10 border border-amber-200/50 text-amber-900 font-medium'
+                      : 'bg-[#fafae6] border border-[#ece7cd] text-[#7d755c]'
+                  }`}>
+                    {Math.max(0, ...comboStreaks) >= 3 ? (
+                      <span>🚀 <b>自律高燃！</b>已达成连续 <b>{Math.max(0, ...comboStreaks)}</b> 天习惯打卡连击。周计划网格背景已点亮渲染！</span>
+                    ) : Math.max(0, ...comboStreaks) > 0 ? (
+                      <span>✨ 已开启连续 <b>{Math.max(0, ...comboStreaks)}</b> 天的打卡连击！打卡率越高，周日程背景色渲染越深哦。</span>
+                    ) : (
+                      <span>❄️ 暂无活跃连击。标记以下打卡项，可在周时间线上形成漂亮的<b>自律水彩网格</b>！</span>
+                    )}
+                  </div>
+
+                  <HabitTrendChart habits={habits} />
+
+                  <div className="space-y-3">
+                    {habits.length === 0 ? (
+                      <div className="text-center py-4 bg-[#fbfbf9] rounded border border-dashed border-[#e4dfd3] text-[#a59d88] text-[11px]">
+                        还没有自定义习惯项哦。在下方添加一个吧！
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        <div className="grid grid-cols-[1fr_repeat(7,32px)] text-[9.5px] text-[#8e8571] font-mono border-b border-[#eae6d8]/80 pb-1 font-bold text-center">
+                          <div className="text-left pl-1">习惯名称</div>
+                          {['一', '二', '三', '四', '五', '六', '日'].map((dText, idx) => (
+                            <div key={idx}>{dText}</div>
+                          ))}
+                        </div>
+                        {habits.map((habit) => (
+                          <div key={habit.id} className="grid grid-cols-[1fr_repeat(7,32px)] items-center py-1.5 hover:bg-[#faf9f5] rounded transition-colors group">
+                            <div className="flex items-center justify-between min-w-0 pr-2 pl-1">
+                              <span className="text-xs text-[#4a4539] font-medium truncate" title={habit.name}>
+                                {habit.name}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteHabit(habit.id)}
+                                className="shrink-0 p-0.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded cursor-pointer"
+                                title={`删除习惯: ${habit.name}`}
+                              >
+                                <Trash2 size={11} strokeWidth={2.5} />
+                              </button>
+                            </div>
+                            {Array.from({ length: 7 }).map((_, dIdx) => {
+                              const checked = habit.history[dIdx] === true;
+                              return (
+                                <div key={dIdx} className="flex justify-center">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleToggleHabit(habit.id, dIdx)}
+                                    className={`w-5 h-5 rounded flex items-center justify-center transition-all cursor-pointer ${
+                                      checked
+                                        ? comboStreaks[dIdx] >= 3
+                                          ? 'bg-amber-500 border border-amber-600 text-white shadow-sm scale-110'
+                                          : 'bg-emerald-500 border border-emerald-600 text-white shadow-sm'
+                                        : 'bg-white border border-[#beb9ab] hover:border-emerald-500'
+                                    }`}
+                                    title={`星期${['一', '二', '三', '四', '五', '六', '日'][dIdx]}`}
+                                  >
+                                    {checked && <CheckCircle2 size={12} strokeWidth={4} />}
+                                  </button>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    <form
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        const input = e.currentTarget.querySelector('input') as HTMLInputElement;
+                        if (!input.value.trim()) return;
+                        handleAddHabit(input.value.trim());
+                        input.value = '';
+                      }}
+                      className="flex gap-1 pt-2 border-t border-dashed border-[#eae6d8]"
+                    >
+                      <input
+                        type="text"
+                        placeholder="➕ 增加新打卡项 (如：每日背单词)..."
+                        className="flex-1 text-xs px-2 py-1 bg-white border border-[#beb9ab] rounded focus:outline-none focus:ring-1 focus:ring-techo-teal placeholder-[#beb9ab]"
+                      />
+                      <button
+                        type="submit"
+                        className="bg-techo-teal hover:bg-[#3d7a77] text-white py-1 px-3 rounded font-black text-xs cursor-pointer transition-colors flex items-center gap-0.5"
+                      >
+                        <Plus size={12} strokeWidth={3} />
+                        <span>添加</span>
+                      </button>
+                    </form>
+                  </div>
+                </div>
               </div>
             )}
 
