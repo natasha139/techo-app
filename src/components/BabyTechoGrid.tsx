@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Printer, Plus, Trash2, CheckCircle2, Circle, ChevronDown, ChevronUp } from 'lucide-react';
+import { Printer, Plus, Trash2, CheckCircle2, Circle, ChevronDown, ChevronUp, Pencil, Check, X } from 'lucide-react';
 import { useReactToPrint } from 'react-to-print';
 import { PlannerCell } from '../types';
 
@@ -17,6 +17,7 @@ interface BabyTechoGridProps {
   onAddChildGoal?: (goal: Omit<Goal, 'id'>) => void;
   onToggleChildGoal?: (id: string) => void;
   onDeleteChildGoal?: (id: string) => void;
+  onEditChildGoal?: (id: string, text: string) => void;
 }
 
 const colorPresets = [
@@ -140,6 +141,7 @@ export default function BabyTechoGrid({
   onAddChildGoal,
   onToggleChildGoal,
   onDeleteChildGoal,
+  onEditChildGoal,
 }: BabyTechoGridProps) {
   const daysOfWeek = getCurrentWeekDays(weekOffset);
   const today = new Date();
@@ -196,6 +198,14 @@ export default function BabyTechoGrid({
   const [goalScope, setGoalScope] = useState<'week' | 'month'>('week');
   const [goalInput, setGoalInput] = useState('');
   const [goalsExpanded, setGoalsExpanded] = useState(true);
+  const [editingGoalId, setEditingGoalId] = useState<string | null>(null);
+  const [editingGoalText, setEditingGoalText] = useState('');
+
+  const confirmEditGoal = (id: string) => {
+    if (editingGoalText.trim()) onEditChildGoal?.(id, editingGoalText.trim());
+    setEditingGoalId(null);
+    setEditingGoalText('');
+  };
 
   const addGoal = () => {
     if (!goalInput.trim()) return;
@@ -296,14 +306,38 @@ export default function BabyTechoGrid({
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1.5">
                 {childGoals.filter(g => g.scope === goalScope).map(g => (
                   <div key={g.id} className="flex items-center gap-2 bg-white border border-pink-100 rounded-md px-2.5 py-1.5 group hover:border-pink-200 transition-colors">
-                    <button onClick={() => toggleGoal(g.id)} className="shrink-0 cursor-pointer text-gray-300 hover:text-[#c06080] transition-colors">
-                      {g.done ? <CheckCircle2 size={14} className="text-[#c06080]" /> : <Circle size={14} />}
-                    </button>
-                    <span className={`flex-1 text-xs leading-snug ${g.done ? 'line-through text-gray-300' : 'text-[#3a3528]'}`}>{g.text}</span>
-                    <button onClick={() => deleteGoal(g.id)}
-                      className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-400 cursor-pointer transition-all shrink-0">
-                      <Trash2 size={11} />
-                    </button>
+                    {editingGoalId === g.id ? (
+                      <>
+                        <input
+                          autoFocus
+                          value={editingGoalText}
+                          onChange={e => setEditingGoalText(e.target.value)}
+                          onKeyDown={e => { if (e.key === 'Enter') confirmEditGoal(g.id); if (e.key === 'Escape') { setEditingGoalId(null); setEditingGoalText(''); } }}
+                          className="flex-1 text-xs px-1.5 py-0.5 border border-pink-300 rounded focus:outline-none focus:ring-1 focus:ring-pink-300 text-[#3a3528]"
+                        />
+                        <button onClick={() => confirmEditGoal(g.id)} className="shrink-0 text-emerald-500 hover:text-emerald-600 cursor-pointer">
+                          <Check size={12} />
+                        </button>
+                        <button onClick={() => { setEditingGoalId(null); setEditingGoalText(''); }} className="shrink-0 text-gray-300 hover:text-gray-500 cursor-pointer">
+                          <X size={12} />
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <button onClick={() => toggleGoal(g.id)} className="shrink-0 cursor-pointer text-gray-300 hover:text-[#c06080] transition-colors">
+                          {g.done ? <CheckCircle2 size={14} className="text-[#c06080]" /> : <Circle size={14} />}
+                        </button>
+                        <span className={`flex-1 text-xs leading-snug ${g.done ? 'line-through text-gray-300' : 'text-[#3a3528]'}`}>{g.text}</span>
+                        <button onClick={() => { setEditingGoalId(g.id); setEditingGoalText(g.text); }}
+                          className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-[#c06080] cursor-pointer transition-all shrink-0">
+                          <Pencil size={11} />
+                        </button>
+                        <button onClick={() => deleteGoal(g.id)}
+                          className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-400 cursor-pointer transition-all shrink-0">
+                          <Trash2 size={11} />
+                        </button>
+                      </>
+                    )}
                   </div>
                 ))}
               </div>

@@ -969,6 +969,13 @@ export default function App() {
     apiCall(() => api.childGoals.delete(syncCode, id), 'child_goals');
   };
 
+  const handleEditChildGoal = (id: string, text: string) => {
+    const updated = childGoals.map(g => g.id === id ? { ...g, text } : g);
+    setChildGoals(updated);
+    const item = updated.find(g => g.id === id)!;
+    apiCall(() => api.childGoals.upsert(syncCode, item), 'child_goals');
+  };
+
   // 16. Reminders
   const handleAddReminder = (r: Omit<Reminder, 'id' | 'createdAt'>) => {
     const item: Reminder = { ...r, id: `rem_${Date.now()}`, createdAt: new Date().toISOString() };
@@ -1717,6 +1724,7 @@ export default function App() {
                     onAddChildGoal={handleAddChildGoal}
                     onToggleChildGoal={handleToggleChildGoal}
                     onDeleteChildGoal={handleDeleteChildGoal}
+                    onEditChildGoal={handleEditChildGoal}
                   />
                 )}
               </div>
