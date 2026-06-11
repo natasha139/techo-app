@@ -16,9 +16,12 @@ import {
   Library,
   Star,
   ExternalLink,
-  Link2
+  Link2,
+  Pencil,
+  Paperclip,
 } from 'lucide-react';
-import { ChildMilestone, ChildDiary, ChildDailyLog, ParentingResource } from '../types';
+import { ChildMilestone, ChildDiary, ChildDailyLog, ParentingResource, InboxAttachment } from '../types';
+import RichEditor, { sanitizeHtml } from './RichEditor';
 
 interface GrowthLink {
   id: string;
@@ -39,6 +42,7 @@ interface ParentingProps {
   onDeleteChildLog: (id: string) => void;
   resources: ParentingResource[];
   onAddResource: (r: Omit<ParentingResource, 'id'>) => void;
+  onUpdateResource: (id: string, fields: Partial<ParentingResource>) => void;
   onDeleteResource: (id: string) => void;
   growthLinks?: GrowthLink[];
   onAddGrowthLink?: (link: Omit<GrowthLink, 'id'>) => void;
@@ -78,6 +82,7 @@ export default function ParentingSection({
   onDeleteChildLog,
   resources = [],
   onAddResource,
+  onUpdateResource,
   onDeleteResource,
   growthLinks = [],
   onAddGrowthLink,
@@ -117,14 +122,52 @@ export default function ParentingSection({
   const [rSubject, setRSubject] = useState('');
   const [rAgeRange, setRAgeRange] = useState('7-10岁');
   const [rRating, setRRating] = useState(0);
-  const [rNotes, setRNotes] = useState('');
+  const [rNotesHtml, setRNotesHtml] = useState('');
+  const [rAttachments, setRAttachments] = useState<InboxAttachment[]>([]);
   const [rUrl, setRUrl] = useState('');
+
+  // Edit state for existing resources
+  const [editingResourceId, setEditingResourceId] = useState<string | null>(null);
+  const [editRName, setEditRName] = useState('');
+  const [editRType, setEditRType] = useState<ParentingResource['type']>('app');
+  const [editRSubject, setEditRSubject] = useState('');
+  const [editRAge, setEditRAge] = useState('');
+  const [editRRating, setEditRRating] = useState(0);
+  const [editRNotesHtml, setEditRNotesHtml] = useState('');
+  const [editRAtts, setEditRAtts] = useState<InboxAttachment[]>([]);
+  const [editRUrl, setEditRUrl] = useState('');
+
+  function openResourceEdit(r: ParentingResource) {
+    setEditingResourceId(r.id);
+    setEditRName(r.name);
+    setEditRType(r.type);
+    setEditRSubject(r.subject ?? '');
+    setEditRAge(r.ageRange ?? '');
+    setEditRRating(r.rating ?? 0);
+    setEditRNotesHtml(r.notes ?? '');
+    setEditRAtts(r.attachments ?? []);
+    setEditRUrl(r.url ?? '');
+  }
+
+  function saveResourceEdit(id: string) {
+    onUpdateResource(id, {
+      name: editRName.trim() || editRName,
+      type: editRType,
+      subject: editRSubject.trim() || undefined,
+      ageRange: editRAge.trim() || undefined,
+      rating: editRRating,
+      notes: editRNotesHtml || undefined,
+      attachments: editRAtts.length > 0 ? editRAtts : undefined,
+      url: editRUrl.trim() || undefined,
+    });
+    setEditingResourceId(null);
+  }
 
   const submitResource = (e: React.FormEvent) => {
     e.preventDefault();
     if (!rName.trim()) return;
-    onAddResource({ name: rName.trim(), type: rType, subject: rSubject.trim() || undefined, ageRange: rAgeRange.trim() || undefined, rating: rRating, notes: rNotes.trim() || undefined, url: rUrl.trim() || undefined });
-    setRName(''); setRSubject(''); setRNotes(''); setRUrl(''); setRRating(0);
+    onAddResource({ name: rName.trim(), type: rType, subject: rSubject.trim() || undefined, ageRange: rAgeRange.trim() || undefined, rating: rRating, notes: rNotesHtml || undefined, attachments: rAttachments.length > 0 ? rAttachments : undefined, url: rUrl.trim() || undefined });
+    setRName(''); setRSubject(''); setRNotesHtml(''); setRAttachments([]); setRUrl(''); setRRating(0);
   };
 
   // Resource input states
@@ -502,10 +545,15 @@ export default function ParentingSection({
                       className="w-full bg-white border border-[#c2bdae] p-2 rounded text-xs focus:outline-none focus:ring-1 focus:ring-pink-400" />
                   </div>
                   <div className="sm:col-span-3">
-                    <label className="block text-[10px] font-bold text-gray-500 mb-1">备注（可选）</label>
-                    <input type="text" value={rNotes} onChange={e => setRNotes(e.target.value)}
-                      placeholder="使用感受、推荐理由..."
-                      className="w-full bg-white border border-[#c2bdae] p-2 rounded text-xs focus:outline-none focus:ring-1 focus:ring-pink-400" />
+                    <label className="block text-[10px] font-bold text-gray-500 mb-1">备注（可选）— 富文本 / 图片 / 文档</label>
+                    <RichEditor
+                      value={rNotesHtml}
+                      onChange={setRNotesHtml}
+                      attachments={rAttachments}
+                      onAttachmentsChange={setRAttachments}
+                      placeholder="使用感受、推荐理由，可加粗/图片..."
+                      minHeight={64}
+                    />
                   </div>
                 </div>
                 <button type="submit"
@@ -520,41 +568,136 @@ export default function ParentingSection({
                     <Library size={24} className="mx-auto mb-2 text-gray-300" />
                     <p className="italic text-gray-400 text-xs">还没有添加学习资源</p>
                   </div>
-                ) : resources.map(r => (
-                  <div key={r.id} className="bg-white border border-[#e8e4da] rounded-md p-3 group hover:border-pink-200 transition-colors relative">
-                    <div className="flex items-start justify-between gap-2 mb-2">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-xs font-bold text-[#3a3528]">{r.name}</span>
-                        <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border ${getResourceTypeStyle(r.type)}`}>
-                          {RESOURCE_TYPES.find(t => t.value === r.type)?.label}
-                        </span>
-                      </div>
-                      <button onClick={() => onDeleteResource(r.id)}
-                        className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 cursor-pointer p-0.5 transition-all shrink-0">
-                        <Trash2 size={11} />
-                      </button>
-                    </div>
-                    <div className="flex flex-wrap gap-2 mb-1.5">
-                      {r.subject && <span className="text-[10px] text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">{r.subject}</span>}
-                      {r.ageRange && <span className="text-[10px] text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">{r.ageRange}</span>}
-                      {r.rating > 0 && (
-                        <span className="flex items-center gap-0.5">
-                          {[1,2,3,4,5].map(s => (
-                            <Star key={s} size={10} className={s <= r.rating ? 'fill-amber-400 text-amber-400' : 'text-gray-200'} />
-                          ))}
-                        </span>
+                ) : resources.map(r => {
+                  const isEditing = editingResourceId === r.id;
+                  const hasNotes = !!(r.notes && r.notes.trim());
+                  const hasAtts = !!(r.attachments && r.attachments.length > 0);
+                  return (
+                    <div key={r.id} className={`bg-white border rounded-md p-3 group transition-colors relative ${isEditing ? 'border-pink-300 shadow-sm' : 'border-[#e8e4da] hover:border-pink-200'}`}>
+                      {isEditing ? (
+                        <div className="space-y-2 text-xs">
+                          <div className="grid grid-cols-2 gap-2">
+                            <div className="col-span-2">
+                              <label className="block text-[10px] font-bold text-gray-500 mb-1">资源名称 *</label>
+                              <input type="text" value={editRName} onChange={e => setEditRName(e.target.value)}
+                                className="w-full bg-white border border-[#c2bdae] p-1.5 rounded text-xs focus:outline-none focus:ring-1 focus:ring-pink-400" />
+                            </div>
+                            <div>
+                              <label className="block text-[10px] font-bold text-gray-500 mb-1">类型</label>
+                              <select value={editRType} onChange={e => setEditRType(e.target.value as ParentingResource['type'])}
+                                className="w-full bg-white border border-[#c2bdae] p-1.5 rounded text-xs focus:outline-none focus:ring-1 focus:ring-pink-400">
+                                {RESOURCE_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+                              </select>
+                            </div>
+                            <div>
+                              <label className="block text-[10px] font-bold text-gray-500 mb-1">科目</label>
+                              <input type="text" value={editRSubject} onChange={e => setEditRSubject(e.target.value)}
+                                className="w-full bg-white border border-[#c2bdae] p-1.5 rounded text-xs focus:outline-none focus:ring-1 focus:ring-pink-400" />
+                            </div>
+                            <div>
+                              <label className="block text-[10px] font-bold text-gray-500 mb-1">适用年龄</label>
+                              <input type="text" value={editRAge} onChange={e => setEditRAge(e.target.value)}
+                                className="w-full bg-white border border-[#c2bdae] p-1.5 rounded text-xs focus:outline-none focus:ring-1 focus:ring-pink-400" />
+                            </div>
+                            <div>
+                              <label className="block text-[10px] font-bold text-gray-500 mb-1">评分</label>
+                              <div className="flex gap-1 pt-0.5">
+                                {[1,2,3,4,5].map(s => (
+                                  <button type="button" key={s} onClick={() => setEditRRating(s)}
+                                    className={`cursor-pointer transition-opacity ${s <= editRRating ? 'opacity-100' : 'opacity-25'}`}>
+                                    <Star size={14} className={s <= editRRating ? 'fill-amber-400 text-amber-400' : 'text-gray-300'} />
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                            <div className="col-span-2">
+                              <label className="block text-[10px] font-bold text-gray-500 mb-1">链接</label>
+                              <input type="text" value={editRUrl} onChange={e => setEditRUrl(e.target.value)}
+                                className="w-full bg-white border border-[#c2bdae] p-1.5 rounded text-xs focus:outline-none focus:ring-1 focus:ring-pink-400" />
+                            </div>
+                          </div>
+                          <div>
+                            <label className="block text-[10px] font-bold text-gray-500 mb-1">备注 — 富文本 / 图片 / 文档</label>
+                            <RichEditor
+                              value={editRNotesHtml}
+                              onChange={setEditRNotesHtml}
+                              attachments={editRAtts}
+                              onAttachmentsChange={setEditRAtts}
+                              placeholder="使用感受、推荐理由..."
+                              minHeight={64}
+                            />
+                          </div>
+                          <div className="flex gap-1.5 justify-end pt-1">
+                            <button type="button" onClick={() => setEditingResourceId(null)}
+                              className="text-[10px] px-2 py-1 rounded border border-gray-200 text-gray-500 hover:bg-gray-50 cursor-pointer">
+                              取消
+                            </button>
+                            <button type="button" onClick={() => saveResourceEdit(r.id)}
+                              className="text-[10px] px-2 py-1 rounded bg-techo-pink text-white hover:bg-[#bd6372] cursor-pointer">
+                              保存
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="flex items-start justify-between gap-2 mb-2">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="text-xs font-bold text-[#3a3528]">{r.name}</span>
+                              <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border ${getResourceTypeStyle(r.type)}`}>
+                                {RESOURCE_TYPES.find(t => t.value === r.type)?.label}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-0.5 shrink-0">
+                              <button onClick={() => openResourceEdit(r)}
+                                className="opacity-0 group-hover:opacity-100 text-amber-400 hover:text-amber-600 cursor-pointer p-0.5 transition-all" title="编辑">
+                                <Pencil size={11} />
+                              </button>
+                              <button onClick={() => onDeleteResource(r.id)}
+                                className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 cursor-pointer p-0.5 transition-all">
+                                <Trash2 size={11} />
+                              </button>
+                            </div>
+                          </div>
+                          <div className="flex flex-wrap gap-2 mb-1.5">
+                            {r.subject && <span className="text-[10px] text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">{r.subject}</span>}
+                            {r.ageRange && <span className="text-[10px] text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">{r.ageRange}</span>}
+                            {(r.rating ?? 0) > 0 && (
+                              <span className="flex items-center gap-0.5">
+                                {[1,2,3,4,5].map(s => (
+                                  <Star key={s} size={10} className={s <= (r.rating ?? 0) ? 'fill-amber-400 text-amber-400' : 'text-gray-200'} />
+                                ))}
+                              </span>
+                            )}
+                          </div>
+                          {hasNotes && (
+                            <div
+                              className="text-[11px] text-gray-500 leading-snug mb-1"
+                              dangerouslySetInnerHTML={{ __html: sanitizeHtml(r.notes!) }}
+                            />
+                          )}
+                          {hasAtts && (
+                            <div className="flex flex-wrap gap-1 mb-1">
+                              {r.attachments!.map(att => (
+                                <a key={att.id} href={att.data} download={att.name}
+                                  className="flex items-center gap-0.5 text-[9px] bg-[#f0ece2] border border-[#d6d0c4] rounded px-1.5 py-0.5 text-[#5a5548] hover:underline">
+                                  <Paperclip size={8} />
+                                  {att.name.length > 22 ? att.name.slice(0, 20) + '…' : att.name}
+                                </a>
+                              ))}
+                            </div>
+                          )}
+                          {r.url && (
+                            <a href={r.url} target="_blank" rel="noopener noreferrer"
+                              className="text-[10px] text-techo-teal hover:underline flex items-center gap-0.5 truncate">
+                              <ExternalLink size={9} />
+                              {r.url.replace(/^https?:\/\//, '').slice(0, 40)}
+                            </a>
+                          )}
+                        </>
                       )}
                     </div>
-                    {r.notes && <p className="text-[11px] text-gray-500 leading-snug mb-1">{r.notes}</p>}
-                    {r.url && (
-                      <a href={r.url} target="_blank" rel="noopener noreferrer"
-                        className="text-[10px] text-techo-teal hover:underline flex items-center gap-0.5 truncate">
-                        <ExternalLink size={9} />
-                        {r.url.replace(/^https?:\/\//, '').slice(0, 40)}
-                      </a>
-                    )}
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}

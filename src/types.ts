@@ -172,6 +172,7 @@ export interface ParentingResource {
   subject?: string;    // 学科/领域，如 "数学" / "英语" / "编程"
   ageRange?: string;   // 适合年龄，如 "6-10岁"
   rating?: number;     // 1-5 评分
-  notes?: string;      // 使用心得
+  notes?: string;      // 使用心得 (HTML string)
+  attachments?: InboxAttachment[];
   url?: string;
 }

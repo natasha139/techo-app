@@ -923,6 +923,13 @@ export default function App() {
     apiCall(() => api.parentingResources.upsert(syncCode, item), 'parenting_resources');
   };
 
+  const handleUpdateParentingResource = (id: string, fields: Partial<ParentingResource>) => {
+    const updated = parentingResources.map(r => r.id === id ? { ...r, ...fields } : r);
+    setParentingResources(updated);
+    const item = updated.find(r => r.id === id)!;
+    apiCall(() => api.parentingResources.upsert(syncCode, item), 'parenting_resources');
+  };
+
   const handleDeleteParentingResource = (id: string) => {
     setParentingResources(prev => prev.filter(r => r.id !== id));
     apiCall(() => api.parentingResources.delete(syncCode, id), 'parenting_resources');
@@ -1923,6 +1930,7 @@ export default function App() {
                 onDeleteChildLog={handleDeleteChildLog}
                 resources={parentingResources}
                 onAddResource={handleAddParentingResource}
+                onUpdateResource={handleUpdateParentingResource}
                 onDeleteResource={handleDeleteParentingResource}
                 growthLinks={growthLinks}
                 onAddGrowthLink={handleAddGrowthLink}
