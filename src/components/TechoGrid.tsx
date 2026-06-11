@@ -33,6 +33,7 @@ interface TechoGridProps {
   cells: PlannerCell[];
   onSaveCell: (dayIndex: number, hour: number, text: string, color: string, tag?: string) => void;
   onClearCell: (dayIndex: number, hour: number) => void;
+  onToggleCellDone?: (dayIndex: number, hour: number) => void;
   todayNotes: { [dayIndex: number]: string };
   onSaveTodayNote: (dayIndex: number, text: string) => void;
   username?: string;
@@ -75,16 +76,18 @@ interface GridCellProps {
   isFocused?: boolean;
   onClick: (dayIdx: number, hour: number) => void;
   onMoveCell: (srcDayIdx: number, srcHour: number, destDayIdx: number, destHour: number) => void;
+  onToggleDone?: (dayIdx: number, hour: number) => void;
   habitBgColorClass?: string;
 }
 
-const GridCell = React.memo(({ 
-  dayIdx, 
-  hour, 
-  cell, 
+const GridCell = React.memo(({
+  dayIdx,
+  hour,
+  cell,
   isFocused,
   onClick,
   onMoveCell,
+  onToggleDone,
   habitBgColorClass
 }: GridCellProps) => {
   const [isDragOver, setIsDragOver] = useState(false);
@@ -157,7 +160,7 @@ const GridCell = React.memo(({
 
       {cell && !isDragOver && (
         <div className="w-full h-full relative flex flex-col justify-between animate-cell-pop">
-          <span className="text-[9px] font-medium leading-tight inline-block select-text break-words w-full">
+          <span className={`text-[9px] font-medium leading-tight inline-block select-text break-words w-full ${cell.isDone ? 'line-through opacity-40' : ''}`}>
             {cell.text}
           </span>
           <div className="flex justify-between items-center select-none mt-0.5">
@@ -171,9 +174,24 @@ const GridCell = React.memo(({
                 </span>
               )}
             </div>
-            <span className="opacity-0 group-hover:opacity-100 duration-150 text-[9px] text-[#48453f] bg-white/70 px-1 rounded-sm border border-[#ccc]">
-              编辑
-            </span>
+            <div className="flex items-center gap-0.5">
+              {onToggleDone && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); onToggleDone(dayIdx, hour); }}
+                  className={`opacity-0 group-hover:opacity-100 duration-150 text-[9px] px-1 rounded-sm border ${
+                    cell.isDone
+                      ? 'text-emerald-600 bg-emerald-50/80 border-emerald-300'
+                      : 'text-[#48453f] bg-white/70 border-[#ccc]'
+                  }`}
+                  title={cell.isDone ? '取消完成' : '标记完成'}
+                >
+                  {cell.isDone ? '✓' : '○'}
+                </button>
+              )}
+              <span className="opacity-0 group-hover:opacity-100 duration-150 text-[9px] text-[#48453f] bg-white/70 px-1 rounded-sm border border-[#ccc]">
+                编辑
+              </span>
+            </div>
           </div>
         </div>
       )}
@@ -187,6 +205,7 @@ const GridCell = React.memo(({
     prevProps.cell?.text === nextProps.cell?.text &&
     prevProps.cell?.color === nextProps.cell?.color &&
     prevProps.cell?.tag === nextProps.cell?.tag &&
+    prevProps.cell?.isDone === nextProps.cell?.isDone &&
     prevProps.dayIdx === nextProps.dayIdx &&
     prevProps.hour === nextProps.hour &&
     prevProps.isFocused === nextProps.isFocused &&
@@ -205,6 +224,7 @@ interface GridColumnProps {
   focusedHour: number | null;
   onCellClick: (dayIdx: number, hour: number) => void;
   onMoveCell: (srcDayIdx: number, srcHour: number, destDayIdx: number, destHour: number) => void;
+  onToggleDone?: (dayIdx: number, hour: number) => void;
   habitBgColorClass?: string;
 }
 
@@ -217,15 +237,16 @@ const GridColumn = React.memo(({
   focusedHour,
   onCellClick,
   onMoveCell,
+  onToggleDone,
   habitBgColorClass
 }: GridColumnProps) => {
   return (
-    <div 
+    <div
       className={`col-span-2 border-r last:border-r-0 border-[#eae6d8] relative bg-cover bg-no-repeat divide-y divide-[#eae6d8]/60 transition-all duration-200 ${
-        isSelected 
-          ? 'bg-amber-500/[0.04]' 
-          : day.isToday 
-            ? 'bg-techo-pink/[0.01]' 
+        isSelected
+          ? 'bg-amber-500/[0.04]'
+          : day.isToday
+            ? 'bg-techo-pink/[0.01]'
             : ''
       }`}
     >
@@ -233,7 +254,7 @@ const GridColumn = React.memo(({
         const cellId = `${dayIdx}-${hour}`;
         const cell = cells.find(c => c.id === cellId);
         const isFocused = focusedHour === hour;
-        
+
         return (
           <GridCell
             key={hour}
@@ -243,6 +264,7 @@ const GridColumn = React.memo(({
             isFocused={isFocused}
             onClick={onCellClick}
             onMoveCell={onMoveCell}
+            onToggleDone={onToggleDone}
             habitBgColorClass={habitBgColorClass}
           />
         );
@@ -255,28 +277,29 @@ const GridColumn = React.memo(({
   if (prevProps.day.isToday !== nextProps.day.isToday) return false;
   if (prevProps.focusedHour !== nextProps.focusedHour) return false;
   if (prevProps.habitBgColorClass !== nextProps.habitBgColorClass) return false;
-  
+
   const prevRelevant = prevProps.cells.filter(c => c.id.startsWith(`${prevProps.dayIdx}-`));
   const nextRelevant = nextProps.cells.filter(c => c.id.startsWith(`${nextProps.dayIdx}-`));
-  
+
   if (prevRelevant.length !== nextRelevant.length) return false;
-  
+
   for (const prevCell of prevRelevant) {
     const nextCell = nextRelevant.find(c => c.id === prevCell.id);
-    if (!nextCell || prevCell.text !== nextCell.text || prevCell.color !== nextCell.color || prevCell.tag !== nextCell.tag) {
+    if (!nextCell || prevCell.text !== nextCell.text || prevCell.color !== nextCell.color || prevCell.tag !== nextCell.tag || prevCell.isDone !== nextCell.isDone) {
       return false;
     }
   }
-  
+
   return true;
 });
 
 GridColumn.displayName = 'GridColumn';
 
-export default function TechoGrid({ 
-  cells, 
-  onSaveCell, 
-  onClearCell, 
+export default function TechoGrid({
+  cells,
+  onSaveCell,
+  onClearCell,
+  onToggleCellDone,
   todayNotes,
   onSaveTodayNote,
   username = 'Natasha',
@@ -1480,6 +1503,7 @@ export default function TechoGrid({
                     focusedHour={isSelected ? keyboardFocusedHour : null}
                     onCellClick={handleCellClick}
                     onMoveCell={handleMoveCell}
+                    onToggleDone={onToggleCellDone}
                     habitBgColorClass={getHabitBgClass(dayIdx)}
                   />
                 );

@@ -85,6 +85,7 @@ export interface PlannerCell {
   text: string;
   color?: string; // custom highlight color
   tag?: string; // Category or feeling tag
+  isDone?: boolean; // strikethrough when completed
 }
 
 export interface WeeklySummary {

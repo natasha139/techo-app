@@ -558,6 +558,16 @@ export default function App() {
       `DELETE FROM planner_cells WHERE id = '${id}'`);
   };
 
+  const handleToggleCellDone = (dayIndex: number, hour: number) => {
+    const id = `${dayIndex}-${hour}`;
+    setCells(prev => prev.map(c => c.id === id ? { ...c, isDone: !c.isDone } : c));
+    const cell = cells.find(c => c.id === id);
+    if (!cell) return;
+    const updated = { ...cell, isDone: !cell.isDone };
+    apiCall(() => api.cells.upsert(syncCode, updated), 'planner_cells',
+      `INSERT OR REPLACE INTO planner_cells (id, text, color, tag, is_done) VALUES ('${id}', ...)`);
+  };
+
   const handleSaveTodayNote = (dayIndex: number, text: string) => {
     const updated = { ...todayNotes, [dayIndex]: text };
     setTodayNotes(updated);
@@ -1694,6 +1704,7 @@ export default function App() {
                     cells={cells}
                     onSaveCell={handleSaveCell}
                     onClearCell={handleClearCell}
+                    onToggleCellDone={handleToggleCellDone}
                     todayNotes={todayNotes}
                     onSaveTodayNote={handleSaveTodayNote}
                     username={username}

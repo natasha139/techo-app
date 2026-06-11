@@ -60,7 +60,7 @@ async function initSchemas(env) {
 
   const g = env.GENERAL_DB;
   const gTables = [
-    `CREATE TABLE IF NOT EXISTS planner_cells (id TEXT PRIMARY KEY, sync_code TEXT NOT NULL, text TEXT NOT NULL DEFAULT '', color TEXT NOT NULL DEFAULT '', tag TEXT, updated_at TEXT NOT NULL)`,
+    `CREATE TABLE IF NOT EXISTS planner_cells (id TEXT PRIMARY KEY, sync_code TEXT NOT NULL, text TEXT NOT NULL DEFAULT '', color TEXT NOT NULL DEFAULT '', tag TEXT, is_done INTEGER NOT NULL DEFAULT 0, updated_at TEXT NOT NULL)`,
     `CREATE TABLE IF NOT EXISTS habits (id TEXT PRIMARY KEY, sync_code TEXT NOT NULL, name TEXT NOT NULL, history TEXT NOT NULL DEFAULT '{}', updated_at TEXT NOT NULL)`,
     `CREATE TABLE IF NOT EXISTS weekly_summary (id TEXT PRIMARY KEY, sync_code TEXT NOT NULL, theme TEXT NOT NULL DEFAULT '', priorities TEXT NOT NULL DEFAULT '[]', practice TEXT NOT NULL DEFAULT '', reminder TEXT NOT NULL DEFAULT '', review_question TEXT NOT NULL DEFAULT '', today_notes TEXT NOT NULL DEFAULT '{}', updated_at TEXT NOT NULL)`,
     `CREATE TABLE IF NOT EXISTS financial_metrics (id TEXT PRIMARY KEY, sync_code TEXT NOT NULL, month TEXT NOT NULL DEFAULT '', traffic INTEGER NOT NULL DEFAULT 0, revenue INTEGER NOT NULL DEFAULT 0, expense INTEGER NOT NULL DEFAULT 0, note TEXT NOT NULL DEFAULT '', updated_at TEXT NOT NULL)`,
@@ -70,6 +70,8 @@ async function initSchemas(env) {
     `CREATE TABLE IF NOT EXISTS reminders (id TEXT PRIMARY KEY, sync_code TEXT NOT NULL, title TEXT NOT NULL DEFAULT '', date TEXT NOT NULL DEFAULT '', advance_days INTEGER NOT NULL DEFAULT 1, note TEXT NOT NULL DEFAULT '', is_done INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL, updated_at TEXT NOT NULL)`,
   ];
   for (const sql of gTables) await g.exec(sql);
+  // Migration: add is_done column to planner_cells if it doesn't exist yet
+  try { await g.exec(`ALTER TABLE planner_cells ADD COLUMN is_done INTEGER NOT NULL DEFAULT 0`); } catch (_) { /* already exists */ }
 }
 
 async function handleSelfGrowth(request, env, path, method, syncCode) {
@@ -336,11 +338,11 @@ async function handleGeneral(request, env, path, method, syncCode) {
   if (path === '/api/general/cells') {
     if (method === 'GET') {
       const { results } = await db.prepare('SELECT * FROM planner_cells WHERE sync_code = ?').bind(syncCode).all();
-      return json(results);
+      return json(results.map(r => ({ id: r.id, text: r.text, color: r.color, tag: r.tag, isDone: r.is_done === 1 })));
     }
     if (method === 'POST') {
       const b = await request.json();
-      await db.prepare('INSERT OR REPLACE INTO planner_cells (id, sync_code, text, color, tag, updated_at) VALUES (?, ?, ?, ?, ?, ?)').bind(b.id, syncCode, b.text ?? '', b.color ?? '', b.tag ?? null, now()).run();
+      await db.prepare('INSERT OR REPLACE INTO planner_cells (id, sync_code, text, color, tag, is_done, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)').bind(b.id, syncCode, b.text ?? '', b.color ?? '', b.tag ?? null, b.isDone ? 1 : 0, now()).run();
       return json({ ok: true });
     }
     if (method === 'DELETE') {
@@ -354,8 +356,8 @@ async function handleGeneral(request, env, path, method, syncCode) {
     const items = await request.json();
     await db.prepare('DELETE FROM planner_cells WHERE sync_code = ?').bind(syncCode).run();
     if (items.length > 0) {
-      const stmt = db.prepare('INSERT INTO planner_cells (id, sync_code, text, color, tag, updated_at) VALUES (?, ?, ?, ?, ?, ?)');
-      await db.batch(items.map(c => stmt.bind(c.id, syncCode, c.text ?? '', c.color ?? '', c.tag ?? null, now())));
+      const stmt = db.prepare('INSERT INTO planner_cells (id, sync_code, text, color, tag, is_done, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)');
+      await db.batch(items.map(c => stmt.bind(c.id, syncCode, c.text ?? '', c.color ?? '', c.tag ?? null, c.isDone ? 1 : 0, now())));
     }
     return json({ ok: true });
   }
