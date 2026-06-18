@@ -562,9 +562,9 @@ export default function ParentingSection({
                 </button>
               </form>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 overflow-y-auto max-h-[350px] pr-1 flex-1">
+              <div className="overflow-y-auto max-h-[350px] flex-1">
                 {resources.length === 0 ? (
-                  <div className="sm:col-span-2 text-center py-12">
+                  <div className="text-center py-12">
                     <Library size={24} className="mx-auto mb-2 text-gray-300" />
                     <p className="italic text-gray-400 text-xs">还没有添加学习资源</p>
                   </div>
@@ -573,9 +573,9 @@ export default function ParentingSection({
                   const hasNotes = !!(r.notes && r.notes.trim());
                   const hasAtts = !!(r.attachments && r.attachments.length > 0);
                   return (
-                    <div key={r.id} className={`bg-white border rounded-md p-3 group transition-colors relative ${isEditing ? 'border-pink-300 shadow-sm' : 'border-[#e8e4da] hover:border-pink-200'}`}>
+                    <div key={r.id} className={`group transition-colors border-b border-[#eae6d8] last:border-0 ${isEditing ? 'bg-pink-50/30' : 'hover:bg-[#faf9f6]'}`}>
                       {isEditing ? (
-                        <div className="space-y-2 text-xs">
+                        <div className="p-3 space-y-2 text-xs">
                           <div className="grid grid-cols-2 gap-2">
                             <div className="col-span-2">
                               <label className="block text-[10px] font-bold text-gray-500 mb-1">资源名称 *</label>
@@ -639,61 +639,39 @@ export default function ParentingSection({
                           </div>
                         </div>
                       ) : (
-                        <>
-                          <div className="flex items-start justify-between gap-2 mb-2">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <span className="text-xs font-bold text-[#3a3528]">{r.name}</span>
-                              <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border ${getResourceTypeStyle(r.type)}`}>
-                                {RESOURCE_TYPES.find(t => t.value === r.type)?.label}
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-0.5 shrink-0">
-                              <button onClick={() => openResourceEdit(r)}
-                                className="opacity-0 group-hover:opacity-100 text-amber-400 hover:text-amber-600 cursor-pointer p-0.5 transition-all" title="编辑">
-                                <Pencil size={11} />
-                              </button>
-                              <button onClick={() => onDeleteResource(r.id)}
-                                className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 cursor-pointer p-0.5 transition-all">
-                                <Trash2 size={11} />
-                              </button>
-                            </div>
-                          </div>
-                          <div className="flex flex-wrap gap-2 mb-1.5">
-                            {r.subject && <span className="text-[10px] text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">{r.subject}</span>}
-                            {r.ageRange && <span className="text-[10px] text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">{r.ageRange}</span>}
-                            {(r.rating ?? 0) > 0 && (
-                              <span className="flex items-center gap-0.5">
-                                {[1,2,3,4,5].map(s => (
-                                  <Star key={s} size={10} className={s <= (r.rating ?? 0) ? 'fill-amber-400 text-amber-400' : 'text-gray-200'} />
-                                ))}
-                              </span>
-                            )}
-                          </div>
-                          {hasNotes && (
-                            <div
-                              className="text-[11px] text-gray-500 leading-snug mb-1"
-                              dangerouslySetInnerHTML={{ __html: sanitizeHtml(r.notes!) }}
-                            />
-                          )}
-                          {hasAtts && (
-                            <div className="flex flex-wrap gap-1 mb-1">
-                              {r.attachments!.map(att => (
-                                <a key={att.id} href={att.data} download={att.name}
-                                  className="flex items-center gap-0.5 text-[9px] bg-[#f0ece2] border border-[#d6d0c4] rounded px-1.5 py-0.5 text-[#5a5548] hover:underline">
-                                  <Paperclip size={8} />
-                                  {att.name.length > 22 ? att.name.slice(0, 20) + '…' : att.name}
-                                </a>
+                        <div className="flex items-center gap-2 px-2 py-2 text-xs">
+                          <span className={`shrink-0 text-[9px] font-bold px-1.5 py-0.5 rounded border ${getResourceTypeStyle(r.type)}`}>
+                            {RESOURCE_TYPES.find(t => t.value === r.type)?.label}
+                          </span>
+                          <span className="font-semibold text-[#3a3528] flex-1 min-w-0 truncate">{r.name}</span>
+                          {r.subject && <span className="shrink-0 text-[10px] text-gray-400">{r.subject}</span>}
+                          {r.ageRange && <span className="shrink-0 text-[10px] text-gray-400">{r.ageRange}</span>}
+                          {(r.rating ?? 0) > 0 && (
+                            <span className="shrink-0 flex items-center gap-0.5">
+                              {[1,2,3,4,5].map(s => (
+                                <Star key={s} size={9} className={s <= (r.rating ?? 0) ? 'fill-amber-400 text-amber-400' : 'text-gray-200'} />
                               ))}
-                            </div>
+                            </span>
                           )}
+                          {hasNotes && <span className="shrink-0 text-[10px] text-techo-teal" title="有备注">✎</span>}
+                          {hasAtts && <span className="shrink-0 text-[10px] text-gray-400" title="有附件">📎</span>}
                           {r.url && (
                             <a href={r.url} target="_blank" rel="noopener noreferrer"
-                              className="text-[10px] text-techo-teal hover:underline flex items-center gap-0.5 truncate">
-                              <ExternalLink size={9} />
-                              {r.url.replace(/^https?:\/\//, '').slice(0, 40)}
+                              className="shrink-0 text-techo-teal hover:underline" title={r.url}>
+                              <ExternalLink size={10} />
                             </a>
                           )}
-                        </>
+                          <div className="shrink-0 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-all">
+                            <button onClick={() => openResourceEdit(r)}
+                              className="text-amber-400 hover:text-amber-600 cursor-pointer p-0.5" title="编辑">
+                              <Pencil size={11} />
+                            </button>
+                            <button onClick={() => onDeleteResource(r.id)}
+                              className="text-gray-400 hover:text-red-500 cursor-pointer p-0.5">
+                              <Trash2 size={11} />
+                            </button>
+                          </div>
+                        </div>
                       )}
                     </div>
                   );
