@@ -10,9 +10,10 @@ import { Sparkles, TrendingUp, Info } from 'lucide-react';
 
 interface HabitTrendChartProps {
   habits: HabitTracker[];
+  weekKey: string;
 }
 
-export default function HabitTrendChart({ habits = [] }: HabitTrendChartProps) {
+export default function HabitTrendChart({ habits = [], weekKey }: HabitTrendChartProps) {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(320);
@@ -35,7 +36,7 @@ export default function HabitTrendChart({ habits = [] }: HabitTrendChartProps) {
     const weekdays = ['一', '二', '三', '四', '五', '六', '日'];
     return weekdays.map((day, idx) => {
       const total = habits.length;
-      const done = habits.filter(h => h.history[idx] === true).length;
+      const done = habits.filter(h => h.history[`${weekKey}-${idx}`] === true).length;
       const rate = total > 0 ? Math.round((done / total) * 100) : 0;
       return {
         dayIndex: idx,
@@ -45,7 +46,7 @@ export default function HabitTrendChart({ habits = [] }: HabitTrendChartProps) {
         total
       };
     });
-  }, [habits]);
+  }, [habits, weekKey]);
 
   // Dimensions of SVG inside the tracker area
   const height = 110;

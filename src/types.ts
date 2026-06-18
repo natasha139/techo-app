@@ -99,7 +99,7 @@ export interface WeeklySummary {
 export interface HabitTracker {
   id: string;
   name: string;
-  history: { [dayIndex: number]: boolean }; // dayIndex (0 to 6) -> isCompleted
+  history: { [weekDayKey: string]: boolean }; // "${weekKey}-${dayIndex}" e.g. "2026-06-16-0"
 }
 
 export interface DiaryNote {

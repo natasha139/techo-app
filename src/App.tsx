@@ -276,10 +276,10 @@ export const TECH_THEMES = [
 ];
 
 const initialHabits: HabitTracker[] = [
-  { id: 'h1', name: '💧 每日饮水 2L', history: { 0: true, 1: true, 2: false, 3: false, 4: false, 5: false, 6: false } },
-  { id: 'h2', name: '📖 书籍阅读 30min', history: { 0: true, 1: true, 2: false, 3: false, 4: false, 5: false, 6: false } },
-  { id: 'h3', name: '🏃 户外慢跑 3km', history: { 0: false, 1: true, 2: false, 3: false, 4: false, 5: false, 6: false } },
-  { id: 'h4', name: '🧘 正念冥想 10min', history: { 0: true, 1: false, 2: false, 3: false, 4: false, 5: false, 6: false } },
+  { id: 'h1', name: '💧 每日饮水 2L', history: {} },
+  { id: 'h2', name: '📖 书籍阅读 30min', history: {} },
+  { id: 'h3', name: '🏃 户外慢跑 3km', history: {} },
+  { id: 'h4', name: '🧘 正念冥想 10min', history: {} },
 ];
 
 function makeD1Log(type: D1SyncLog['type'], message: string, sql?: string): D1SyncLog {
@@ -618,9 +618,11 @@ export default function App() {
 
   // Habits
   const handleToggleHabit = (habitId: string, dayIdx: number) => {
+    const wk = getWeekKey(weekOffset);
+    const key = `${wk}-${dayIdx}`;
     const updated = habits.map(h => {
       if (h.id !== habitId) return h;
-      return { ...h, history: { ...h.history, [dayIdx]: !h.history[dayIdx] } };
+      return { ...h, history: { ...h.history, [key]: !h.history[key] } };
     });
     setHabits(updated);
     const item = updated.find(h => h.id === habitId)!;
@@ -632,7 +634,7 @@ export default function App() {
     const newHabit: HabitTracker = {
       id: `h_${Date.now()}`,
       name: name.trim() || '未命名的习惯',
-      history: { 0: false, 1: false, 2: false, 3: false, 4: false, 5: false, 6: false }
+      history: {}
     };
     setHabits(prev => [...prev, newHabit]);
     apiCall(() => api.habits.upsert(syncCode, newHabit), 'habits',
@@ -647,8 +649,10 @@ export default function App() {
 
   // Habit streak calculation (used in sidebar badge + habits tab)
   const dailyHabitStats = Array.from({ length: 7 }).map((_, dIdx) => {
+    const wk = getWeekKey(weekOffset);
+    const key = `${wk}-${dIdx}`;
     const total = habits.length;
-    const done = habits.filter(h => h.history[dIdx] === true).length;
+    const done = habits.filter(h => h.history[key] === true).length;
     return { total, done, isDone: total > 0 && done > 0, ratio: total > 0 ? done / total : 0 };
   });
   const comboStreaks = (() => {
@@ -1786,11 +1790,28 @@ export default function App() {
                       <Flame size={15} className={Math.max(0, ...comboStreaks) >= 3 ? 'text-amber-500 animate-pulse' : 'text-[#a19c8d]'} />
                       <span>每日习惯追踪 / Habit Tracker</span>
                     </span>
-                    {Math.max(0, ...comboStreaks) > 0 && (
-                      <span className="text-[10px] bg-amber-500/10 text-amber-700 px-2 py-0.5 rounded-full font-bold flex items-center gap-0.5 animate-bounce">
-                        🔥 {Math.max(0, ...comboStreaks)}连击
+                    <div className="flex items-center gap-1">
+                      {Math.max(0, ...comboStreaks) > 0 && (
+                        <span className="text-[10px] bg-amber-500/10 text-amber-700 px-2 py-0.5 rounded-full font-bold flex items-center gap-0.5 animate-bounce">
+                          🔥 {Math.max(0, ...comboStreaks)}连击
+                        </span>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => setWeekOffset(w => w - 1)}
+                        disabled={weekOffset === 0}
+                        className="p-0.5 rounded hover:bg-[#f0ece0] disabled:opacity-30 text-[#7d7560] cursor-pointer"
+                      >‹</button>
+                      <span className="text-[10px] text-[#7d7560] font-mono min-w-[36px] text-center">
+                        {weekOffset === 0 ? '本周' : weekOffset < 0 ? `${-weekOffset}周前` : `${weekOffset}周后`}
                       </span>
-                    )}
+                      <button
+                        type="button"
+                        onClick={() => setWeekOffset(w => w + 1)}
+                        disabled={weekOffset >= 12}
+                        className="p-0.5 rounded hover:bg-[#f0ece0] disabled:opacity-30 text-[#7d7560] cursor-pointer"
+                      >›</button>
+                    </div>
                   </div>
 
                   <div className={`p-2.5 rounded text-[10.5px] leading-relaxed mb-3 ${
@@ -1807,7 +1828,7 @@ export default function App() {
                     )}
                   </div>
 
-                  <HabitTrendChart habits={habits} />
+                  <HabitTrendChart habits={habits} weekKey={getWeekKey(weekOffset)} />
 
                   <div className="space-y-3">
                     {habits.length === 0 ? (
@@ -1816,50 +1837,64 @@ export default function App() {
                       </div>
                     ) : (
                       <div className="space-y-2">
-                        <div className="grid grid-cols-[1fr_repeat(7,32px)] text-[9.5px] text-[#8e8571] font-mono border-b border-[#eae6d8]/80 pb-1 font-bold text-center">
-                          <div className="text-left pl-1">习惯名称</div>
-                          {['一', '二', '三', '四', '五', '六', '日'].map((dText, idx) => (
-                            <div key={idx}>{dText}</div>
-                          ))}
-                        </div>
-                        {habits.map((habit) => (
-                          <div key={habit.id} className="grid grid-cols-[1fr_repeat(7,32px)] items-center py-1.5 hover:bg-[#faf9f5] rounded transition-colors group">
-                            <div className="flex items-center justify-between min-w-0 pr-2 pl-1">
-                              <span className="text-xs text-[#4a4539] font-medium truncate" title={habit.name}>
-                                {habit.name}
-                              </span>
-                              <button
-                                type="button"
-                                onClick={() => handleDeleteHabit(habit.id)}
-                                className="shrink-0 p-0.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded cursor-pointer"
-                                title={`删除习惯: ${habit.name}`}
-                              >
-                                <Trash2 size={11} strokeWidth={2.5} />
-                              </button>
-                            </div>
-                            {Array.from({ length: 7 }).map((_, dIdx) => {
-                              const checked = habit.history[dIdx] === true;
-                              return (
-                                <div key={dIdx} className="flex justify-center">
-                                  <button
-                                    type="button"
-                                    onClick={() => handleToggleHabit(habit.id, dIdx)}
-                                    className={`w-5 h-5 rounded flex items-center justify-center transition-all cursor-pointer ${
-                                      checked
-                                        ? comboStreaks[dIdx] >= 3
-                                          ? 'bg-amber-500 border border-amber-600 text-white shadow-sm scale-110'
-                                          : 'bg-emerald-500 border border-emerald-600 text-white shadow-sm'
-                                        : 'bg-white border border-[#beb9ab] hover:border-emerald-500'
-                                    }`}
-                                    title={`星期${['一', '二', '三', '四', '五', '六', '日'][dIdx]}`}
-                                  >
-                                    {checked && <CheckCircle2 size={12} strokeWidth={4} />}
-                                  </button>
+                        {(() => {
+                          const wk = getWeekKey(weekOffset);
+                          const monday = new Date(wk);
+                          const dayLabels = Array.from({ length: 7 }).map((_, i) => {
+                            const d = new Date(monday);
+                            d.setDate(monday.getDate() + i);
+                            return `${d.getMonth() + 1}/${d.getDate()}`;
+                          });
+                          return (
+                            <>
+                              <div className="grid grid-cols-[1fr_repeat(7,32px)] text-[9.5px] text-[#8e8571] font-mono border-b border-[#eae6d8]/80 pb-1 font-bold text-center">
+                                <div className="text-left pl-1">习惯名称</div>
+                                {dayLabels.map((label, idx) => (
+                                  <div key={idx}>{label}</div>
+                                ))}
+                              </div>
+                              {habits.map((habit) => (
+                                <div key={habit.id} className="grid grid-cols-[1fr_repeat(7,32px)] items-center py-1.5 hover:bg-[#faf9f5] rounded transition-colors group">
+                                  <div className="flex items-center justify-between min-w-0 pr-2 pl-1">
+                                    <span className="text-xs text-[#4a4539] font-medium truncate" title={habit.name}>
+                                      {habit.name}
+                                    </span>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleDeleteHabit(habit.id)}
+                                      className="shrink-0 p-0.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded cursor-pointer"
+                                      title={`删除习惯: ${habit.name}`}
+                                    >
+                                      <Trash2 size={11} strokeWidth={2.5} />
+                                    </button>
+                                  </div>
+                                  {Array.from({ length: 7 }).map((_, dIdx) => {
+                                    const hKey = `${wk}-${dIdx}`;
+                                    const checked = habit.history[hKey] === true;
+                                    return (
+                                      <div key={dIdx} className="flex justify-center">
+                                        <button
+                                          type="button"
+                                          onClick={() => handleToggleHabit(habit.id, dIdx)}
+                                          className={`w-5 h-5 rounded flex items-center justify-center transition-all cursor-pointer ${
+                                            checked
+                                              ? comboStreaks[dIdx] >= 3
+                                                ? 'bg-amber-500 border border-amber-600 text-white shadow-sm scale-110'
+                                                : 'bg-emerald-500 border border-emerald-600 text-white shadow-sm'
+                                              : 'bg-white border border-[#beb9ab] hover:border-emerald-500'
+                                          }`}
+                                          title={`星期${['一', '二', '三', '四', '五', '六', '日'][dIdx]}`}
+                                        >
+                                          {checked && <CheckCircle2 size={12} strokeWidth={4} />}
+                                        </button>
+                                      </div>
+                                    );
+                                  })}
                                 </div>
-                              );
-                            })}
-                          </div>
-                        ))}
+                              ))}
+                            </>
+                          );
+                        })()}
                       </div>
                     )}
 
