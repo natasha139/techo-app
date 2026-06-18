@@ -67,6 +67,15 @@ import {
 } from './data';
 
 import { api } from './api';
+
+// Returns the ISO date of Monday for the given weekOffset (e.g. "2026-06-16")
+function getWeekKey(offset: number): string {
+  const today = new Date();
+  const dayOfWeek = today.getDay();
+  const monday = new Date(today);
+  monday.setDate(today.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1) + offset * 7);
+  return monday.toISOString().slice(0, 10);
+}
 import SyncModal from './components/SyncModal';
 import TechoGrid from './components/TechoGrid';
 import BabyTechoGrid from './components/BabyTechoGrid';
@@ -379,7 +388,7 @@ export default function App() {
   const [childLogs, setChildLogs] = useState<ChildDailyLog[]>([]);
   const [cells, setCells] = useState<PlannerCell[]>([]);
   const [babyCells, setBabyCells] = useState<PlannerCell[]>([]);
-  const [babyTodayNotes, setBabyTodayNotes] = useState<{ [k: number]: string }>({});
+  const [babyTodayNotes, setBabyTodayNotes] = useState<{ [key: string]: string }>({});
   const [diaryNotes, setDiaryNotes] = useState<DiaryNote[]>([]);
   const [habits, setHabits] = useState<HabitTracker[]>([]);
   const [childDiaries, setChildDiaries] = useState<ChildDiary[]>([]);
@@ -394,16 +403,8 @@ export default function App() {
   const [reminders, setReminders] = useState<Reminder[]>([]);
   const [barkUrl, setBarkUrl] = useState<string>('');
   
-  // Today's Notes local state for days Mon-Sun (Indices 0 - 6)
-  const [todayNotes, setTodayNotes] = useState<{ [dayIndex: number]: string }>({
-    0: '复盘上一周 D1 KV 开发细节。今天和团队进行技术审计。',
-    1: '晨跑身体轻盈。下午安静看会DDIA！',
-    2: '宝宝今天大动表现很棒，能够平稳扶小床挺起身子了。',
-    3: '开发手帐周视图网格中考量性能，用 React.memo 减少重绘点阵。',
-    4: '周五下班。晚上全家去商场附近吃顿蒸汽海鲜粤菜。',
-    5: '全天亲子露营，天气晴朗，风吹草动特别惬意。',
-    6: '周日手纸复盘，感觉整个人越来越清爽，继续加油！'
-  });
+  // Today's Notes — keyed by "${weekKey}-${dayIndex}" e.g. "2026-06-16-0"
+  const [todayNotes, setTodayNotes] = useState<{ [key: string]: string }>({});
 
   // DB Sync logs state
   const [d1Logs, setD1Logs] = useState<D1SyncLog[]>([
@@ -475,12 +476,17 @@ export default function App() {
       if (summaryData) {
         setWeeklySummary({ ...initialWeeklySummary, ...summaryData });
         if (summaryData.todayNotes && Object.keys(summaryData.todayNotes).length) {
-          setTodayNotes(summaryData.todayNotes);
+          const keys = Object.keys(summaryData.todayNotes);
+          // Old format had numeric keys "0"-"6"; new format has "YYYY-MM-DD-N"
+          const isOldFormat = keys.every(k => /^\d$/.test(k));
+          setTodayNotes(isOldFormat ? {} : summaryData.todayNotes);
         } else {
           setTodayNotes({});
         }
         if (summaryData.babyTodayNotes && Object.keys(summaryData.babyTodayNotes).length) {
-          setBabyTodayNotes(summaryData.babyTodayNotes);
+          const bkeys = Object.keys(summaryData.babyTodayNotes);
+          const isOldBabyFormat = bkeys.every(k => /^\d$/.test(k));
+          setBabyTodayNotes(isOldBabyFormat ? {} : summaryData.babyTodayNotes);
         } else {
           setBabyTodayNotes({});
         }
@@ -543,7 +549,7 @@ export default function App() {
 
   // 1. Weekly Grid Cells
   const handleSaveCell = (dayIndex: number, hour: number, text: string, color: string, tag?: string) => {
-    const id = `${dayIndex}-${hour}`;
+    const id = `${getWeekKey(weekOffset)}-${dayIndex}-${hour}`;
     const item = { id, text, color, tag };
     const rest = cells.filter(c => c.id !== id);
     setCells([...rest, item]);
@@ -552,14 +558,14 @@ export default function App() {
   };
 
   const handleClearCell = (dayIndex: number, hour: number) => {
-    const id = `${dayIndex}-${hour}`;
+    const id = `${getWeekKey(weekOffset)}-${dayIndex}-${hour}`;
     setCells(prev => prev.filter(c => c.id !== id));
     apiCall(() => api.cells.delete(syncCode, id), 'planner_cells',
       `DELETE FROM planner_cells WHERE id = '${id}'`);
   };
 
   const handleToggleCellDone = (dayIndex: number, hour: number) => {
-    const id = `${dayIndex}-${hour}`;
+    const id = `${getWeekKey(weekOffset)}-${dayIndex}-${hour}`;
     setCells(prev => prev.map(c => c.id === id ? { ...c, isDone: !c.isDone } : c));
     const cell = cells.find(c => c.id === id);
     if (!cell) return;
@@ -569,7 +575,7 @@ export default function App() {
   };
 
   const handleSaveTodayNote = (dayIndex: number, text: string) => {
-    const updated = { ...todayNotes, [dayIndex]: text };
+    const updated = { ...todayNotes, [`${getWeekKey(weekOffset)}-${dayIndex}`]: text };
     setTodayNotes(updated);
     // debounce 1s — today notes 高频输入，避免每次击键都写 D1
     if (todayNotesDebounceRef.current) clearTimeout(todayNotesDebounceRef.current);
@@ -587,7 +593,7 @@ export default function App() {
 
   // Baby week plan handlers
   const handleSaveBabyCell = (dayIndex: number, hour: number, text: string, color: string) => {
-    const id = `baby_${dayIndex}-${hour}`;
+    const id = `baby_${getWeekKey(weekOffset)}-${dayIndex}-${hour}`;
     const item = { id, text, color };
     setBabyCells(prev => [...prev.filter(c => c.id !== id), item]);
     apiCall(() => api.cells.upsert(syncCode, item), 'planner_cells (baby)',
@@ -595,14 +601,14 @@ export default function App() {
   };
 
   const handleClearBabyCell = (dayIndex: number, hour: number) => {
-    const id = `baby_${dayIndex}-${hour}`;
+    const id = `baby_${getWeekKey(weekOffset)}-${dayIndex}-${hour}`;
     setBabyCells(prev => prev.filter(c => c.id !== id));
     apiCall(() => api.cells.delete(syncCode, id), 'planner_cells (baby)',
       `DELETE FROM planner_cells WHERE id = '${id}'`);
   };
 
   const handleSaveBabyTodayNote = (dayIndex: number, text: string) => {
-    const updated = { ...babyTodayNotes, [dayIndex]: text };
+    const updated = { ...babyTodayNotes, [`${getWeekKey(weekOffset)}-${dayIndex}`]: text };
     setBabyTodayNotes(updated);
     if (babyTodayNotesDebounceRef.current) clearTimeout(babyTodayNotesDebounceRef.current);
     babyTodayNotesDebounceRef.current = setTimeout(() => {
@@ -1706,13 +1712,21 @@ export default function App() {
                   </div>
                 </div>
 
-                {weekPlan === 'mine' && (
+                {weekPlan === 'mine' && (() => {
+                  const wk = getWeekKey(weekOffset);
+                  const weekCells = cells.filter(c => c.id.startsWith(wk + '-'));
+                  const weekNotes: { [d: number]: string } = {};
+                  for (let d = 0; d < 7; d++) {
+                    const v = todayNotes[`${wk}-${d}`];
+                    if (v) weekNotes[d] = v;
+                  }
+                  return (
                   <TechoGrid
-                    cells={cells}
+                    cells={weekCells}
                     onSaveCell={handleSaveCell}
                     onClearCell={handleClearCell}
                     onToggleCellDone={handleToggleCellDone}
-                    todayNotes={todayNotes}
+                    todayNotes={weekNotes}
                     onSaveTodayNote={handleSaveTodayNote}
                     username={username}
                     habits={habits}
@@ -1727,14 +1741,23 @@ export default function App() {
                     initialEditionLabel={editionLabel}
                     initialCoverTitle={coverTitle}
                   />
-                )}
+                  );
+                })()}
 
-                {weekPlan === 'baby' && (
+                {weekPlan === 'baby' && (() => {
+                  const wk = getWeekKey(weekOffset);
+                  const weekBabyCells = babyCells.filter(c => c.id.startsWith(`baby_${wk}-`));
+                  const weekBabyNotes: { [d: number]: string } = {};
+                  for (let d = 0; d < 7; d++) {
+                    const v = babyTodayNotes[`${wk}-${d}`];
+                    if (v) weekBabyNotes[d] = v;
+                  }
+                  return (
                   <BabyTechoGrid
-                    cells={babyCells}
+                    cells={weekBabyCells}
                     onSaveCell={handleSaveBabyCell}
                     onClearCell={handleClearBabyCell}
-                    todayNotes={babyTodayNotes}
+                    todayNotes={weekBabyNotes}
                     onSaveTodayNote={handleSaveBabyTodayNote}
                     childName="小树"
                     weekOffset={weekOffset}
@@ -1744,7 +1767,8 @@ export default function App() {
                     onDeleteChildGoal={handleDeleteChildGoal}
                     onEditChildGoal={handleEditChildGoal}
                   />
-                )}
+                  );
+                })()}
               </div>
             )}
 

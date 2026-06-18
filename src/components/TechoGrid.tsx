@@ -251,8 +251,7 @@ const GridColumn = React.memo(({
       }`}
     >
       {hours.map((hour) => {
-        const cellId = `${dayIdx}-${hour}`;
-        const cell = cells.find(c => c.id === cellId);
+        const cell = cells.find(c => c.id.endsWith(`-${dayIdx}-${hour}`));
         const isFocused = focusedHour === hour;
 
         return (
@@ -278,8 +277,8 @@ const GridColumn = React.memo(({
   if (prevProps.focusedHour !== nextProps.focusedHour) return false;
   if (prevProps.habitBgColorClass !== nextProps.habitBgColorClass) return false;
 
-  const prevRelevant = prevProps.cells.filter(c => c.id.startsWith(`${prevProps.dayIdx}-`));
-  const nextRelevant = nextProps.cells.filter(c => c.id.startsWith(`${nextProps.dayIdx}-`));
+  const prevRelevant = prevProps.cells.filter(c => c.id.endsWith(`-${prevProps.dayIdx}-`) || c.id.includes(`-${prevProps.dayIdx}-`));
+  const nextRelevant = nextProps.cells.filter(c => c.id.endsWith(`-${nextProps.dayIdx}-`) || c.id.includes(`-${nextProps.dayIdx}-`));
 
   if (prevRelevant.length !== nextRelevant.length) return false;
 
@@ -591,7 +590,7 @@ export default function TechoGrid({
   }, [selectedDay, renderedTodayNotes]);
 
   const handleCellClick = React.useCallback((dayIndex: number, hour: number) => {
-    const existing = renderedCells.find(c => c.id === `${dayIndex}-${hour}`);
+    const existing = renderedCells.find(c => c.id.endsWith(`-${dayIndex}-${hour}`));
     setEditingSlot({ dayIndex, hour });
     setEditText(existing ? existing.text : '');
     setEditColor(existing?.color || colorPresets[0].class);
@@ -688,16 +687,15 @@ export default function TechoGrid({
   }, [selectedDay, keyboardFocusedHour, handleCellClick]);
 
   const handleMoveCell = React.useCallback((srcDayIdx: number, srcHour: number, destDayIdx: number, destHour: number) => {
-    const sourceCell = renderedCells.find(c => c.id === `${srcDayIdx}-${srcHour}`);
+    const sourceCell = renderedCells.find(c => c.id.endsWith(`-${srcDayIdx}-${srcHour}`));
     if (sourceCell) {
-      // Snappily update local state replica to offer instant feedback
       const localFiltered = renderedCells
-        .filter(c => c.id !== `${srcDayIdx}-${srcHour}`)
-        .filter(c => c.id !== `${destDayIdx}-${destHour}`);
+        .filter(c => !c.id.endsWith(`-${srcDayIdx}-${srcHour}`))
+        .filter(c => !c.id.endsWith(`-${destDayIdx}-${destHour}`));
       const updatedLocal = [
         ...localFiltered,
         {
-          id: `${destDayIdx}-${destHour}`,
+          id: sourceCell.id.replace(`-${srcDayIdx}-${srcHour}`, `-${destDayIdx}-${destHour}`),
           text: sourceCell.text,
           color: sourceCell.color,
           tag: sourceCell.tag

@@ -77,8 +77,7 @@ function buildPrintHtml(
   const rows = hours.map(hour => {
     const hourLabel = `<td style="width:4%;text-align:center;font-size:9px;font-weight:700;color:${hour >= 6 && hour <= 21 ? '#8c8577' : '#c4c0b8'};border:1px solid #eae6d8;padding:1px;">${String(hour).padStart(2, '0')}</td>`;
     const dayCells = days.map((_, dayIdx) => {
-      const cellId = `baby_${dayIdx}-${hour}`;
-      const cell = cells.find(c => c.id === cellId);
+      const cell = cells.find(c => c.id.endsWith(`-${dayIdx}-${hour}`));
       const bg = cell ? cell.color : 'transparent';
       const borderLeft = cell ? `3px solid ${colorMap[cell.color] || '#fbcfe8'}` : '1px solid #eae6d8';
       const text = cell ? `<span style="font-size:9px;font-weight:500;color:#3c3830;">${cell.text}</span>` : '';
@@ -173,8 +172,7 @@ export default function BabyTechoGrid({
   const [editColorIdx, setEditColorIdx] = useState(0);
 
   const openCell = (dayIdx: number, hour: number) => {
-    const id = `baby_${dayIdx}-${hour}`;
-    const existing = renderedCells.find(c => c.id === id);
+    const existing = renderedCells.find(c => c.id.endsWith(`-${dayIdx}-${hour}`));
     setEditText(existing?.text || '');
     setEditColorIdx(existing?.color ? colorPresets.findIndex(cp => cp.bg === existing.color) : 0);
     setEditingSlot({ dayIndex: dayIdx, hour });
@@ -389,8 +387,7 @@ export default function BabyTechoGrid({
                 }`}
               >
                 {hours.map(hour => {
-                  const cellId = `baby_${dayIdx}-${hour}`;
-                  const cell = renderedCells.find(c => c.id === cellId);
+                  const cell = renderedCells.find(c => c.id.endsWith(`-${dayIdx}-${hour}`));
                   return (
                     <div
                       key={hour}
@@ -494,7 +491,7 @@ export default function BabyTechoGrid({
               </div>
             </div>
             <div className="flex gap-2">
-              {renderedCells.find(c => c.id === `baby_${editingSlot.dayIndex}-${editingSlot.hour}`) && (
+              {renderedCells.find(c => c.id.endsWith(`-${editingSlot.dayIndex}-${editingSlot.hour}`)) && (
                 <button
                   onClick={() => { onClearCell(editingSlot.dayIndex, editingSlot.hour); setEditingSlot(null); }}
                   className="flex-1 py-2 text-xs font-bold text-red-500 border border-red-200 rounded-lg hover:bg-red-50 cursor-pointer"
