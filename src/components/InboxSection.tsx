@@ -241,7 +241,7 @@ export default function InboxSection({
           </div>
 
           {/* Items list */}
-          <div className="space-y-2 max-h-[520px] overflow-y-auto pr-1">
+          <div className="max-h-[520px] overflow-y-auto divide-y divide-[#eae6d8]">
             {filtered.length === 0 ? (
               <div className="text-center py-10 text-gray-400 text-xs">
                 <Inbox size={24} className="mx-auto mb-2 opacity-30" />
@@ -256,7 +256,7 @@ export default function InboxSection({
                 return (
                   <div
                     key={item.id}
-                    className={`bg-white border rounded-md px-3 py-2.5 group transition-all ${item.isReviewed ? 'border-gray-200 opacity-60' : 'border-[#e4decb] hover:border-amber-200 hover:shadow-xs'}`}
+                    className={`px-1 py-2 group transition-all ${item.isReviewed ? 'opacity-50' : 'hover:bg-[#faf9f6]'}`}
                   >
                     <div className="flex items-start gap-3">
                       <button
