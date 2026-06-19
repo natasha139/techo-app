@@ -164,6 +164,12 @@ export interface FitnessLog {
   note?: string;       // 额外备注
 }
 
+// 生理期记录
+export interface PeriodLog {
+  id: string;
+  date: string; // "2026-06-19"
+}
+
 // 育儿资源条目 (工具/书籍/App)
 export interface ParentingResource {
   id: string;

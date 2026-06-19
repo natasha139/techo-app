@@ -6,23 +6,26 @@
 import React, { useState } from 'react';
 import {
   Dumbbell, Utensils, Scale, Trash2, Plus,
-  TrendingDown, TrendingUp, Minus, Flame
+  TrendingDown, TrendingUp, Minus, Flame, Heart
 } from 'lucide-react';
-import { FitnessLog } from '../types';
+import { FitnessLog, PeriodLog } from '../types';
 
 interface FitnessSectionProps {
   logs: FitnessLog[];
   onAdd: (item: Omit<FitnessLog, 'id'>) => void;
   onDelete: (id: string) => void;
+  periodLogs: PeriodLog[];
+  onAddPeriod: (date: string) => void;
+  onDeletePeriod: (id: string) => void;
 }
 
 const EXERCISE_PRESETS = [
   '跑步', '快走', '骑车', '游泳', '瑜伽', '力量训练', '跳绳', 'HIIT', '羽毛球', '其他'
 ];
 
-type FitnessTab = 'log' | 'weight' | 'meals';
+type FitnessTab = 'log' | 'weight' | 'meals' | 'period';
 
-export default function FitnessSection({ logs, onAdd, onDelete }: FitnessSectionProps) {
+export default function FitnessSection({ logs, onAdd, onDelete, periodLogs, onAddPeriod, onDeletePeriod }: FitnessSectionProps) {
   const [activeTab, setActiveTab] = useState<FitnessTab>('log');
 
   const today = new Date().toISOString().slice(0, 10);
@@ -36,6 +39,9 @@ export default function FitnessSection({ logs, onAdd, onDelete }: FitnessSection
   const [calories, setCalories] = useState('');
   const [meals, setMeals] = useState('');
   const [note, setNote] = useState('');
+
+  // Period form
+  const [periodDate, setPeriodDate] = useState(today);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -70,6 +76,7 @@ export default function FitnessSection({ logs, onAdd, onDelete }: FitnessSection
     { key: 'log', label: '打卡记录', icon: <Dumbbell size={13} /> },
     { key: 'weight', label: '体重趋势', icon: <Scale size={13} /> },
     { key: 'meals', label: '饮食记录', icon: <Utensils size={13} /> },
+    { key: 'period', label: '生理期', icon: <Heart size={13} /> },
   ];
 
   return (
@@ -347,6 +354,52 @@ export default function FitnessSection({ logs, onAdd, onDelete }: FitnessSection
                     </button>
                   </div>
                 ))}
+              </div>
+            </div>
+          )}
+          {activeTab === 'period' && (
+            <div>
+              <div className="flex items-center justify-between border-b-2 border-[#eae6d8] pb-3 mb-6">
+                <h3 className="font-display font-bold text-[#48453f] text-sm flex items-center gap-2">
+                  <Heart size={18} className="text-pink-400" />
+                  生理期记录
+                </h3>
+                <span className="text-[10px] text-pink-400 font-bold font-mono">PERIOD LOG</span>
+              </div>
+              <form onSubmit={e => { e.preventDefault(); onAddPeriod(periodDate); }}
+                className="bg-pink-50/30 border border-pink-100 rounded-md p-4 mb-6 flex items-end gap-3">
+                <div className="flex-1">
+                  <label className="block text-[10px] font-bold text-gray-500 mb-1">日期</label>
+                  <input type="date" value={periodDate} onChange={e => setPeriodDate(e.target.value)}
+                    className="w-full bg-white border border-[#c2bdae] p-2 rounded text-xs focus:outline-none focus:ring-1 focus:ring-pink-300" />
+                </div>
+                <button type="submit"
+                  className="py-2 px-4 bg-pink-400 hover:bg-pink-500 text-white text-xs font-bold rounded cursor-pointer transition-colors whitespace-nowrap">
+                  + 记录
+                </button>
+              </form>
+              <div className="divide-y divide-[#eae6d8] overflow-y-auto max-h-[360px]">
+                {[...periodLogs].sort((a, b) => b.date.localeCompare(a.date)).length === 0 ? (
+                  <div className="text-center py-12 text-gray-400 text-xs">
+                    <Heart size={24} className="mx-auto mb-2 opacity-20" />
+                    <p>还没有记录</p>
+                  </div>
+                ) : [...periodLogs].sort((a, b) => b.date.localeCompare(a.date)).map((log, i, arr) => {
+                  const prev = arr[i + 1];
+                  const cycle = prev ? Math.round((new Date(log.date).getTime() - new Date(prev.date).getTime()) / 86400000) : null;
+                  return (
+                    <div key={log.id} className="flex items-center gap-3 py-2 px-1 group hover:bg-[#faf9f6]">
+                      <span className="text-xs font-mono text-[#3a3528] flex-1">{log.date}</span>
+                      {cycle !== null && (
+                        <span className="text-[10px] text-gray-400">距上次 {cycle} 天</span>
+                      )}
+                      <button onClick={() => onDeletePeriod(log.id)}
+                        className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-400 cursor-pointer p-1 transition-all">
+                        <Trash2 size={11} />
+                      </button>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}

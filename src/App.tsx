@@ -48,7 +48,8 @@ import {
   WeeklySummary,
   InboxItem,
   FitnessLog,
-  ParentingResource
+  ParentingResource,
+  PeriodLog
 } from './types';
 
 import {
@@ -395,6 +396,7 @@ export default function App() {
   const [weeklySummary, setWeeklySummary] = useState<WeeklySummary>(initialWeeklySummary);
   const [inboxItems, setInboxItems] = useState<InboxItem[]>([]);
   const [fitnessLogs, setFitnessLogs] = useState<FitnessLog[]>([]);
+  const [periodLogs, setPeriodLogs] = useState<PeriodLog[]>([]);
   const [parentingResources, setParentingResources] = useState<ParentingResource[]>([]);
   const [childGoals, setChildGoals] = useState<any[]>([]);
   const [growthLinks, setGrowthLinks] = useState<any[]>([]);
@@ -924,6 +926,14 @@ export default function App() {
   const handleDeleteFitness = (id: string) => {
     setFitnessLogs(prev => prev.filter(l => l.id !== id));
     apiCall(() => api.fitness.delete(syncCode, id), 'fitness_logs');
+  };
+
+  const handleAddPeriod = (date: string) => {
+    setPeriodLogs(prev => [{ id: crypto.randomUUID(), date }, ...prev]);
+  };
+
+  const handleDeletePeriod = (id: string) => {
+    setPeriodLogs(prev => prev.filter(l => l.id !== id));
   };
 
   // 11. Parenting Resources
@@ -2024,6 +2034,9 @@ export default function App() {
                 onAdd={handleAddFitness}
                 onUpdate={handleUpdateFitness}
                 onDelete={handleDeleteFitness}
+                periodLogs={periodLogs}
+                onAddPeriod={handleAddPeriod}
+                onDeletePeriod={handleDeletePeriod}
               />
             )}
 
