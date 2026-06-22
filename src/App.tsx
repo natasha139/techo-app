@@ -1699,14 +1699,14 @@ export default function App() {
                   {/* 多周切换 */}
                   <div className="flex items-center gap-1 bg-[#f5f3eb] border border-[#d6cfbe] p-1 rounded-md text-xs select-none">
                     <button
-                      onClick={() => setWeekOffset(prev => Math.max(0, prev - 1))}
-                      disabled={weekOffset === 0}
+                      onClick={() => setWeekOffset(prev => Math.max(-12, prev - 1))}
+                      disabled={weekOffset <= -12}
                       className="px-2 py-1 rounded font-bold text-[#6e685a] hover:bg-[#eae6d8] disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-all"
                     >
                       ‹
                     </button>
                     <span className="px-2 py-1 font-semibold text-[#48453f]">
-                      {weekOffset === 0 ? '本周' : weekOffset === 1 ? '下周' : weekOffset < 5 ? `${weekOffset}周后` : `${Math.round(weekOffset / 4)}个月后`}
+                      {weekOffset === 0 ? '本周' : weekOffset === 1 ? '下周' : weekOffset === -1 ? '上周' : weekOffset > 0 ? (weekOffset < 5 ? `${weekOffset}周后` : `${Math.round(weekOffset / 4)}个月后`) : (weekOffset > -5 ? `${Math.abs(weekOffset)}周前` : `${Math.round(Math.abs(weekOffset) / 4)}个月前`)}
                     </span>
                     <button
                       onClick={() => setWeekOffset(prev => Math.min(12, prev + 1))}
@@ -1715,7 +1715,7 @@ export default function App() {
                     >
                       ›
                     </button>
-                    {weekOffset > 0 && (
+                    {weekOffset !== 0 && (
                       <button
                         onClick={() => setWeekOffset(0)}
                         className="px-2 py-0.5 text-[9px] font-bold text-techo-teal hover:underline cursor-pointer"
