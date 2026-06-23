@@ -1808,8 +1808,8 @@ export default function App() {
                       )}
                       <button
                         type="button"
-                        onClick={() => setWeekOffset(w => w - 1)}
-                        disabled={weekOffset === 0}
+                        onClick={() => setWeekOffset(w => Math.max(-12, w - 1))}
+                        disabled={weekOffset <= -12}
                         className="p-0.5 rounded hover:bg-[#f0ece0] disabled:opacity-30 text-[#7d7560] cursor-pointer"
                       >‹</button>
                       <span className="text-[10px] text-[#7d7560] font-mono min-w-[36px] text-center">
@@ -1817,7 +1817,7 @@ export default function App() {
                       </span>
                       <button
                         type="button"
-                        onClick={() => setWeekOffset(w => w + 1)}
+                        onClick={() => setWeekOffset(w => Math.min(12, w + 1))}
                         disabled={weekOffset >= 12}
                         className="p-0.5 rounded hover:bg-[#f0ece0] disabled:opacity-30 text-[#7d7560] cursor-pointer"
                       >›</button>
