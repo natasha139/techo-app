@@ -582,7 +582,7 @@ export default function App() {
     // debounce 1s — today notes 高频输入，避免每次击键都写 D1
     if (todayNotesDebounceRef.current) clearTimeout(todayNotesDebounceRef.current);
     todayNotesDebounceRef.current = setTimeout(() => {
-      apiCall(() => api.weeklySummary.save(syncCode, { ...weeklySummary, todayNotes: updated }), 'weekly_summary',
+      apiCall(() => api.weeklySummary.save(syncCode, { ...weeklySummary, todayNotes: updated, babyTodayNotes }), 'weekly_summary',
         `UPDATE weekly_summary SET today_notes = ? WHERE sync_code = ?`);
     }, 1000);
   };

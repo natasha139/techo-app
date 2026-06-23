@@ -62,7 +62,7 @@ async function initSchemas(env) {
   const gTables = [
     `CREATE TABLE IF NOT EXISTS planner_cells (id TEXT PRIMARY KEY, sync_code TEXT NOT NULL, text TEXT NOT NULL DEFAULT '', color TEXT NOT NULL DEFAULT '', tag TEXT, is_done INTEGER NOT NULL DEFAULT 0, updated_at TEXT NOT NULL)`,
     `CREATE TABLE IF NOT EXISTS habits (id TEXT PRIMARY KEY, sync_code TEXT NOT NULL, name TEXT NOT NULL, history TEXT NOT NULL DEFAULT '{}', updated_at TEXT NOT NULL)`,
-    `CREATE TABLE IF NOT EXISTS weekly_summary (id TEXT PRIMARY KEY, sync_code TEXT NOT NULL, theme TEXT NOT NULL DEFAULT '', priorities TEXT NOT NULL DEFAULT '[]', practice TEXT NOT NULL DEFAULT '', reminder TEXT NOT NULL DEFAULT '', review_question TEXT NOT NULL DEFAULT '', today_notes TEXT NOT NULL DEFAULT '{}', updated_at TEXT NOT NULL)`,
+    `CREATE TABLE IF NOT EXISTS weekly_summary (id TEXT PRIMARY KEY, sync_code TEXT NOT NULL, theme TEXT NOT NULL DEFAULT '', priorities TEXT NOT NULL DEFAULT '[]', practice TEXT NOT NULL DEFAULT '', reminder TEXT NOT NULL DEFAULT '', review_question TEXT NOT NULL DEFAULT '', today_notes TEXT NOT NULL DEFAULT '{}', baby_today_notes TEXT NOT NULL DEFAULT '{}', updated_at TEXT NOT NULL)`,
     `CREATE TABLE IF NOT EXISTS financial_metrics (id TEXT PRIMARY KEY, sync_code TEXT NOT NULL, month TEXT NOT NULL DEFAULT '', traffic INTEGER NOT NULL DEFAULT 0, revenue INTEGER NOT NULL DEFAULT 0, expense INTEGER NOT NULL DEFAULT 0, note TEXT NOT NULL DEFAULT '', updated_at TEXT NOT NULL)`,
     `CREATE TABLE IF NOT EXISTS fitness_logs (id TEXT PRIMARY KEY, sync_code TEXT NOT NULL, date TEXT NOT NULL DEFAULT '', weight REAL, exercise TEXT, duration INTEGER, calories INTEGER, meals TEXT, note TEXT, updated_at TEXT NOT NULL)`,
     `CREATE TABLE IF NOT EXISTS settings (sync_code TEXT NOT NULL, key TEXT NOT NULL, value TEXT NOT NULL DEFAULT '', updated_at TEXT NOT NULL, PRIMARY KEY (sync_code, key))`,
@@ -383,13 +383,13 @@ async function handleGeneral(request, env, path, method, syncCode) {
     if (method === 'GET') {
       const row = await db.prepare('SELECT * FROM weekly_summary WHERE sync_code = ? LIMIT 1').bind(syncCode).first();
       if (!row) return json(null);
-      return json({ theme: row.theme, priorities: JSON.parse(row.priorities || '[]'), practice: row.practice, reminder: row.reminder, reviewQuestion: row.review_question, todayNotes: JSON.parse(row.today_notes || '{}') });
+      return json({ theme: row.theme, priorities: JSON.parse(row.priorities || '[]'), practice: row.practice, reminder: row.reminder, reviewQuestion: row.review_question, todayNotes: JSON.parse(row.today_notes || '{}'), babyTodayNotes: JSON.parse(row.baby_today_notes || '{}') });
     }
     if (method === 'POST') {
       const b = await request.json();
       const existing = await db.prepare('SELECT id FROM weekly_summary WHERE sync_code = ? LIMIT 1').bind(syncCode).first();
       const id = existing?.id || `ws_${Date.now()}`;
-      await db.prepare('INSERT OR REPLACE INTO weekly_summary (id, sync_code, theme, priorities, practice, reminder, review_question, today_notes, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)').bind(id, syncCode, b.theme ?? '', JSON.stringify(b.priorities ?? []), b.practice ?? '', b.reminder ?? '', b.reviewQuestion ?? '', JSON.stringify(b.todayNotes ?? {}), now()).run();
+      await db.prepare('INSERT OR REPLACE INTO weekly_summary (id, sync_code, theme, priorities, practice, reminder, review_question, today_notes, baby_today_notes, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').bind(id, syncCode, b.theme ?? '', JSON.stringify(b.priorities ?? []), b.practice ?? '', b.reminder ?? '', b.reviewQuestion ?? '', JSON.stringify(b.todayNotes ?? {}), JSON.stringify(b.babyTodayNotes ?? {}), now()).run();
       return json({ ok: true });
     }
   }
