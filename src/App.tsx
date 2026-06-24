@@ -1094,176 +1094,143 @@ export default function App() {
             </div>
           </div>
         )}
-        <header className="bg-white border-2 border-[#d3cfc3] rounded-lg px-4 py-3 shadow-xs flex flex-wrap items-center justify-between gap-3 relative">
-          {/* Subtle physical notebook spine binding effect on the left rail */}
-          <div className="absolute top-0 bottom-0 left-0 w-2.5 flex flex-col justify-between py-1 bg-[#d5cfbe] border-r border-[#bebaaa] rounded-l-lg overflow-hidden">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="w-1.5 h-1.5 rounded-full bg-white mx-auto shadow-inner" />
-            ))}
-          </div>
+        <header className="bg-[var(--color-techo-cream,#fbfaf5)] border-2 border-[var(--card-border,#d3cfc3)] rounded-lg shadow-sm overflow-hidden">
+          {/* ── Cover strip: spine + identity ── */}
+          <div className="flex items-stretch">
+            {/* Book spine — texture column */}
+            <div className="w-6 shrink-0 techo-spine flex flex-col items-center justify-between py-2 gap-1"
+              style={{ backgroundColor: 'var(--spine-bg, #d5cfbe)', borderRight: '1px solid var(--card-border, #bebaaa)' }}>
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="w-2 h-2 rounded-full bg-white/70 shadow-inner" />
+              ))}
+            </div>
 
-          <div className="flex items-center gap-3 pl-3">
-            <label className="w-8 h-8 rounded-full bg-[#8a816c] flex items-center justify-center text-white shrink-0 shadow-xxs cursor-pointer overflow-hidden hover:opacity-80 transition-opacity" title="点击上传头像">
-              {avatarUrl
-                ? <img src={avatarUrl} alt="avatar" className="w-full h-full object-cover" />
-                : <span className="font-display font-black text-sm">自</span>
-              }
-              <input type="file" accept="image/*" className="hidden" onChange={e => {
-                const file = e.target.files?.[0];
-                if (!file) return;
-                const reader = new FileReader();
-                reader.onload = ev => {
-                  const url = ev.target?.result as string;
-                  setAvatarUrl(url);
-                  saveSetting('avatar_url', url);
-                };
-                reader.readAsDataURL(file);
-              }} />
-            </label>
-            <div>
-              <div className="flex items-center gap-2">
-                {editingTitle ? (
-                  <input autoFocus value={appTitle} onChange={e => setAppTitle(e.target.value)}
-                    onBlur={() => { setEditingTitle(false); saveSetting('app_title', appTitle); }}
-                    onKeyDown={e => { if (e.key === 'Enter') { setEditingTitle(false); saveSetting('app_title', appTitle); } }}
-                    className="font-display font-extrabold text-lg text-[#3c3830] tracking-wide bg-transparent border-b border-techo-teal outline-none w-36" />
-                ) : (
-                  <h1 className="font-display font-extrabold text-lg text-[#3c3830] tracking-wide cursor-text hover:text-techo-teal transition-colors"
-                    onDoubleClick={() => setEditingTitle(true)} title="双击编辑">{appTitle}</h1>
-                )}
+            {/* Cover face */}
+            <div className="flex-1 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-4 py-3">
+              {/* Identity block */}
+              <div className="flex items-center gap-3 min-w-0">
+                <label className="w-9 h-9 rounded-full flex items-center justify-center text-white shrink-0 shadow-sm cursor-pointer overflow-hidden hover:ring-2 hover:ring-techo-teal/40 transition-all"
+                  style={{ backgroundColor: 'var(--sidebar-active-bg, #8a816c)' }}
+                  title="点击上传头像">
+                  {avatarUrl
+                    ? <img src={avatarUrl} alt="avatar" className="w-full h-full object-cover" />
+                    : <span className="font-display font-black text-sm">自</span>
+                  }
+                  <input type="file" accept="image/*" className="hidden" onChange={e => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onload = ev => {
+                      const url = ev.target?.result as string;
+                      setAvatarUrl(url);
+                      saveSetting('avatar_url', url);
+                    };
+                    reader.readAsDataURL(file);
+                  }} />
+                </label>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {editingTitle ? (
+                      <input autoFocus value={appTitle} onChange={e => setAppTitle(e.target.value)}
+                        onBlur={() => { setEditingTitle(false); saveSetting('app_title', appTitle); }}
+                        onKeyDown={e => { if (e.key === 'Enter') { setEditingTitle(false); saveSetting('app_title', appTitle); } }}
+                        className="font-display font-extrabold text-base text-[#3c3830] bg-transparent border-b border-techo-teal outline-none w-32" />
+                    ) : (
+                      <h1 className="font-display font-extrabold text-base text-[#3c3830] tracking-tight cursor-text hover:text-techo-teal transition-colors leading-tight"
+                        onDoubleClick={() => setEditingTitle(true)} title="双击编辑">{appTitle}</h1>
+                    )}
+                    <span className="techo-sticker hidden sm:inline-block">手帐</span>
+                  </div>
+                  {editingSubtitle ? (
+                    <input autoFocus value={appSubtitle} onChange={e => setAppSubtitle(e.target.value)}
+                      onBlur={() => { setEditingSubtitle(false); saveSetting('app_subtitle', appSubtitle); }}
+                      onKeyDown={e => { if (e.key === 'Enter') { setEditingSubtitle(false); saveSetting('app_subtitle', appSubtitle); } }}
+                      className="text-[10px] text-[#8e8574] font-medium bg-transparent border-b border-techo-teal/50 outline-none w-64" />
+                  ) : (
+                    <p className="text-[10px] text-[#8e8574] font-medium cursor-text hover:text-techo-teal transition-colors leading-tight mt-0.5"
+                      onDoubleClick={() => setEditingSubtitle(true)} title="双击编辑">{appSubtitle}</p>
+                  )}
+                </div>
               </div>
-              {editingSubtitle ? (
-                <input autoFocus value={appSubtitle} onChange={e => setAppSubtitle(e.target.value)}
-                  onBlur={() => { setEditingSubtitle(false); saveSetting('app_subtitle', appSubtitle); }}
-                  onKeyDown={e => { if (e.key === 'Enter') { setEditingSubtitle(false); saveSetting('app_subtitle', appSubtitle); } }}
-                  className="text-[10px] text-[#8e8574] font-medium tracking-wide bg-transparent border-b border-techo-teal/50 outline-none w-72" />
-              ) : (
-                <p className="text-[10px] text-[#8e8574] font-medium tracking-wide cursor-text hover:text-techo-teal transition-colors"
-                  onDoubleClick={() => setEditingSubtitle(true)} title="双击编辑">{appSubtitle}</p>
-              )}
+
+              {/* Controls row */}
+              <div className="flex items-center gap-2 flex-wrap">
+                {/* Year/Month/Week switcher */}
+                <div className="flex items-center gap-0.5 bg-[#f5f3eb] border border-[#d6cfbe] p-0.5 rounded text-xs select-none">
+                  {(['year', 'month', 'week'] as const).map((t, i) => (
+                    <button key={t} onClick={() => setSubHeaderTab(t)}
+                      className={`px-2.5 py-1 rounded text-[11px] font-semibold transition-all cursor-pointer ${
+                        subHeaderTab === t ? 'text-white shadow-xs' : 'text-[#6e685a] hover:bg-[#eae6d8]'
+                      }`}
+                      style={subHeaderTab === t ? { backgroundColor: 'var(--sidebar-active-bg, #8a816c)' } : {}}>
+                      {['年', '月', '周'][i]}计划
+                    </button>
+                  ))}
+                </div>
+
+                {/* Customizer */}
+                <button onClick={() => setIsCustomizerOpen(!isCustomizerOpen)}
+                  className={`px-2.5 py-1 rounded text-[11px] font-semibold flex items-center gap-1 transition-all cursor-pointer border ${
+                    isCustomizerOpen ? 'bg-amber-100 text-amber-900 border-amber-300' : 'bg-[#f5f3eb] border-[#d6cfbe] text-[#6e685a] hover:bg-[#eae6d8]'
+                  }`}
+                  title="纸质与封面定制">
+                  <Palette size={12} className={isCustomizerOpen ? 'animate-spin' : ''} />
+                  <span className="hidden sm:inline">定制</span>
+                </button>
+
+                {/* User status */}
+                <div className="flex items-center gap-2 relative">
+                  <div className="hidden sm:flex flex-col items-end text-right leading-tight">
+                    {syncCode ? (
+                      <button onClick={() => navigator.clipboard.writeText(syncCode).catch(() => {})}
+                        title="点击复制同步码"
+                        className="text-[10px] text-[#8e8574] font-mono hover:text-techo-teal cursor-pointer transition-colors">
+                        {syncCode}
+                      </button>
+                    ) : (
+                      <span className="text-[10px] text-[#b0a99a] font-mono">未连接</span>
+                    )}
+                    <span className="text-[11px] font-bold text-[#48453f] font-mono">{username}</span>
+                  </div>
+                  <button onClick={() => setIsProfileOpen(!isProfileOpen)}
+                    className="w-8 h-8 rounded-full border-2 hover:border-techo-teal/60 cursor-pointer flex items-center justify-center text-[#8a816c] transition-all"
+                    style={{ backgroundColor: 'var(--color-techo-cream-darker, #f5f3e9)', borderColor: 'var(--card-border, #d6cfbe)' }}>
+                    <User size={14} />
+                  </button>
+                  {isProfileOpen && (
+                    <div className="absolute right-0 top-10 mt-1 w-44 bg-white border-2 border-[#d3cfc3] rounded-md shadow-lg z-50 p-2 text-xs font-sans divide-y divide-gray-100">
+                      <div className="p-2">
+                        <p className="font-bold text-[#3a3833]">{username}</p>
+                        <p className="text-[9px] text-gray-400 flex items-center gap-1 mt-0.5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
+                          D1 已连接
+                        </p>
+                      </div>
+                      <div className="p-1.5 space-y-1">
+                        <button onClick={() => { setActiveTab('database'); setIsProfileOpen(false); }}
+                          className="w-full text-left p-1.5 hover:bg-[#fafaf3] rounded flex items-center gap-1.5 text-[#555047]">
+                          <Database size={12} />数据库控制台
+                        </button>
+                        <button onClick={() => { navigator.clipboard.writeText(syncCode).catch(() => {}); setIsProfileOpen(false); }}
+                          className="w-full text-left p-1.5 hover:bg-[#fafaf3] rounded flex items-center gap-1.5 text-[#555047]">
+                          <Key size={12} />复制同步码
+                        </button>
+                        <button onClick={() => { localStorage.removeItem('techo_sync_code'); setSyncCode(''); setIsProfileOpen(false); }}
+                          className="w-full text-left p-1.5 hover:bg-rose-50 text-red-600 rounded flex items-center gap-1.5">
+                          ✕ 退出登录
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* QUICK TIME PRESENTS NAVS */}
-          <div className="flex items-center gap-1.5 bg-[#fbfaf5] border border-[#d6cfbe] p-1 rounded-md text-xs select-none">
-            <button
-              onClick={() => setSubHeaderTab('year')}
-              className={`px-3 py-1 rounded transition-all font-semibold cursor-pointer ${
-                subHeaderTab === 'year' 
-                  ? 'bg-[#8a816c] text-white shadow-xxs' 
-                  : 'text-[#6e685a] hover:bg-[#eae6d8]'
-              }`}
-            >
-              年计划
-            </button>
-            <button
-              onClick={() => setSubHeaderTab('month')}
-              className={`px-3 py-1 rounded transition-all font-semibold cursor-pointer ${
-                subHeaderTab === 'month' 
-                  ? 'bg-[#8a816c] text-white shadow-xxs' 
-                  : 'text-[#6e685a] hover:bg-[#eae6d8]'
-              }`}
-            >
-              月计划
-            </button>
-            <button
-              onClick={() => setSubHeaderTab('week')}
-              className={`px-3 py-1 rounded transition-all font-semibold cursor-pointer ${
-                subHeaderTab === 'week' 
-                  ? 'bg-[#8a816c] text-white shadow-xxs' 
-                  : 'text-[#6e685a] hover:bg-[#eae6d8]'
-              }`}
-            >
-              周计划 (主)
-            </button>
-          </div>
-
-          {/* PALETTE CUSTOMIZER NAV BUTTON */}
-          <button
-            onClick={() => setIsCustomizerOpen(!isCustomizerOpen)}
-            className={`px-3 py-1.5 rounded transition-all cursor-pointer flex items-center gap-1.5 text-xs font-semibold ${
-              isCustomizerOpen 
-                ? 'bg-amber-100 text-amber-950 border border-amber-300 shadow-xxs' 
-                : 'bg-[#fbfaf5] border border-[#d6cfbe] text-[#6e685a] hover:bg-[#eae6d8]'
-            }`}
-            title="个性定制手账封面皮质、纸墨配色与印章署名"
-          >
-            <Palette size={13} className={isCustomizerOpen ? 'animate-bounce' : ''} />
-            <span>封面与纸质定制</span>
-          </button>
-
-          {/* USER CONFIG PROFILE AND METRICS STATUS CARD */}
-          <div className="flex items-center gap-3 pr-2 relative">
-            
-            <div className="flex flex-col items-end text-right select-none">
-              <div className="flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                {syncCode ? (
-                  <button
-                    onClick={() => navigator.clipboard.writeText(syncCode).catch(() => {})}
-                    title="点击复制同步码"
-                    className="text-[10px] text-gray-500 font-bold font-mono hover:text-techo-teal cursor-pointer transition-colors"
-                  >
-                    同步码: {syncCode}
-                  </button>
-                ) : (
-                  <span className="text-[10px] text-gray-500 font-bold font-mono">D1 未连接</span>
-                )}
-              </div>
-              <span className="text-[11px] font-bold text-[#48453f] font-mono leading-none">{username}</span>
-            </div>
-
-            <button 
-              onClick={() => setIsProfileOpen(!isProfileOpen)}
-              className="w-8 h-8 rounded-full bg-[#faf5e8] border border-[#cbd5e1] hover:border-techo-teal/60 cursor-pointer flex items-center justify-center text-[#8a816c] transition-all overflow-hidden"
-              title="用户配置与选项"
-            >
-              <User size={16} />
-            </button>
-
-            {/* Profile Dropdown Simulation */}
-            {isProfileOpen && (
-              <div className="absolute right-0 top-10 mt-1 w-44 bg-white border-2 border-[#d3cfc3] rounded-md shadow-lg z-50 p-2 text-xs font-sans divide-y divide-gray-100">
-                <div className="p-2">
-                  <p className="font-bold text-[#3a3833]">手记作者 {username}</p>
-                  <p className="text-[9px] text-gray-400">D1 Schema: Registered</p>
-                </div>
-                <div className="p-1.5 space-y-1">
-                  <button
-                    onClick={() => { setActiveTab('database'); setIsProfileOpen(false); }}
-                    className="w-full text-left p-1.5 hover:bg-[#fafaf3] rounded flex items-center gap-1.5 text-[#555047]"
-                  >
-                    <Database size={12} />
-                    配置 D1 CLI 命令行
-                  </button>
-                  <button
-                    onClick={() => {
-                      navigator.clipboard.writeText(syncCode).catch(() => {});
-                      setIsProfileOpen(false);
-                    }}
-                    className="w-full text-left p-1.5 hover:bg-[#fafaf3] rounded flex items-center gap-1.5 text-[#555047]"
-                  >
-                    <Key size={12} />
-                    复制同步码 {syncCode}
-                  </button>
-                  <button
-                    onClick={() => {
-                      localStorage.removeItem('techo_sync_code');
-                      setSyncCode('');
-                      setIsProfileOpen(false);
-                    }}
-                    className="w-full text-left p-1.5 hover:bg-rose-50 text-red-600 rounded flex items-center gap-1.5"
-                  >
-                    ✕ 退出 / 切换同步码
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* PROJECT NAV — embedded strip */}
-          <div className="w-full border-t border-[#ebe7da] pt-2 flex items-center gap-1 flex-wrap pl-3">
-            <span className="text-[9px] text-[#b0a99a] font-bold font-mono mr-1 tracking-wider">PROJECTS</span>
+          {/* ── Project links strip ── */}
+          <div className="border-t flex items-center gap-1 flex-wrap px-4 py-1.5"
+            style={{ borderColor: 'var(--card-border, #ebe7da)', backgroundColor: 'var(--color-techo-cream-darker, #f5f3e9)' }}>
+            <span className="text-[9px] text-[#b0a99a] font-bold font-mono mr-1 tracking-wider shrink-0">PROJECTS</span>
             {[
               { id: 'input-pipeline', label: 'Input Pipeline', url: 'https://input-pipeline.pages.dev', dot: '#60a5fa' },
               { id: 'writing-archive', label: 'Writing Archive', url: 'https://natasha-ielts-library.pages.dev', dot: '#34d399' },
@@ -1273,15 +1240,13 @@ export default function App() {
             ].map(p => (
               p.id === 'techo' ? (
                 <span key={p.id} className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200 text-[10px] font-bold">
-                  <span style={{ width: 5, height: 5, borderRadius: '50%', background: p.dot, display: 'inline-block', flexShrink: 0 }} />
-                  {p.label}
+                  <span style={{ width: 5, height: 5, borderRadius: '50%', background: p.dot, display: 'inline-block' }} />{p.label}
                 </span>
               ) : (
                 <a key={p.id} href={p.url} target="_blank" rel="noopener noreferrer"
-                  className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#f5f3eb] border border-[#ddd8cc] text-[10px] font-semibold text-[#6e685a] hover:bg-[#ebe7da] hover:text-[#3c3830] transition-colors"
-                >
-                  <span style={{ width: 5, height: 5, borderRadius: '50%', background: p.dot, display: 'inline-block', flexShrink: 0 }} />
-                  {p.label}
+                  className="flex items-center gap-1 px-2 py-0.5 rounded-full border text-[10px] font-semibold transition-colors hover:opacity-80"
+                  style={{ backgroundColor: 'var(--color-techo-cream, #fbfaf5)', borderColor: 'var(--card-border, #ddd8cc)', color: '#6e685a' }}>
+                  <span style={{ width: 5, height: 5, borderRadius: '50%', background: p.dot, display: 'inline-block' }} />{p.label}
                 </a>
               )
             ))}
@@ -1505,170 +1470,56 @@ export default function App() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
           
           {/* SIDEBAR NAVIGATION (2-cols on lg) */}
-          <aside className="lg:col-span-2 bg-[#f5f3eb] border border-[#d6cfbe] p-2.5 rounded-lg flex flex-col gap-1.5 shadow-xxs">
-            <div className="text-[10px] text-gray-500 font-bold px-2 py-1 uppercase select-none tracking-widest border-b border-[#eae6d8] mb-1 font-display">
-              📒 纸页板块目录
+          <aside className="lg:col-span-2 bg-[var(--color-techo-cream,#f5f3eb)] border-y border-l border-[var(--card-border,#d6cfbe)] rounded-l-lg flex flex-col gap-0.5 shadow-xs overflow-visible"
+            style={{ borderRight: 'none' }}>
+            {/* Spine binding — left rail */}
+            <div className="absolute left-0 top-0 bottom-0 w-1.5 techo-spine rounded-tl-lg rounded-bl-lg pointer-events-none"
+              style={{ backgroundColor: 'var(--spine-bg, #d5cfbe)', borderRight: '1px solid var(--card-border, #bebaaa)', position: 'relative', width: 0 }} />
+            <div className="text-[9px] text-[#b0a99a] font-black px-3 pt-3 pb-1.5 uppercase tracking-widest select-none border-b border-[var(--card-border,#eae6d8)] font-mono">
+              目录
             </div>
 
-            <button
-              onClick={() => setActiveTab('week')}
-              className={`w-full p-2 text-xs font-semibold rounded text-left flex items-center gap-2 transition-all cursor-pointer ${
-                activeTab === 'week'
-                  ? 'bg-white border-l-4 border-techo-teal text-[#333] shadow-xs font-bold'
-                  : 'text-[#6e685a] hover:bg-white/60 hover:text-black'
-              }`}
-            >
-              <Calendar size={14} className="text-techo-blue" />
-              <span>主周计划 (24H)</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('habits')}
-              className={`w-full p-2 text-xs font-semibold rounded text-left flex items-center gap-2 transition-all cursor-pointer ${
-                activeTab === 'habits'
-                  ? 'bg-white border-l-4 border-techo-teal text-[#333] shadow-xs font-bold'
-                  : 'text-[#6e685a] hover:bg-white/60 hover:text-black'
-              }`}
-            >
-              <Flame size={14} className={Math.max(0, ...comboStreaks) >= 3 ? 'text-amber-500' : 'text-[#a19c8d]'} />
-              <span className="flex-1">每日习惯追踪</span>
-              {Math.max(0, ...comboStreaks) > 0 && (
-                <span className="text-[9px] font-bold bg-amber-400/20 text-amber-700 px-1 rounded-full leading-none py-0.5">
-                  🔥{Math.max(0, ...comboStreaks)}
+            {[
+              { id: 'week' as const,       icon: <Calendar size={13} className="text-techo-blue" />,            label: '主周计划',    sub: '24H轴' },
+              { id: 'habits' as const,      icon: <Flame size={13} className={Math.max(0, ...comboStreaks) >= 3 ? 'text-amber-500' : 'text-[#a19c8d]'} />, label: '习惯追踪',    badge: Math.max(0, ...comboStreaks) > 0 ? `🔥${Math.max(0, ...comboStreaks)}` : null },
+              { id: 'self_growth' as const, icon: <Sparkles size={13} className="text-techo-teal" />,            label: '成长愿望',    sub: '技能树' },
+              { id: 'work' as const,        icon: <Briefcase size={13} className="text-[#e29453]" />,            label: '工作 OKR',    sub: '项目目标' },
+              { id: 'hobby' as const,       icon: <Heart size={13} className="text-techo-pink" />,               label: '个人兴趣',    sub: '书影收单' },
+              { id: 'media' as const,       icon: <MessageSquareCode size={13} className="text-purple-600" />,   label: '自媒体',      sub: '副业运营' },
+              { id: 'parenting' as const,   icon: <Baby size={13} className="text-[#e09453]" />,                 label: '养育孩子',    sub: '生息守护' },
+              { id: 'diary' as const,       icon: <BookOpen size={13} className="text-techo-teal" />,            label: '随笔日记',    sub: '心境日记本' },
+              { id: 'inbox' as const,       icon: <Inbox size={13} className="text-amber-500" />,                label: '收集箱',      badge: inboxItems.filter(i => !i.isReviewed).length > 0 ? String(inboxItems.filter(i => !i.isReviewed).length) : null },
+              { id: 'fitness' as const,     icon: <Activity size={13} className="text-emerald-500" />,           label: '健康运动',    sub: '打卡' },
+              { id: 'reminders' as const,   icon: <Bell size={13} className="text-[#8a816c]" />,                 label: '计划提醒',    badge: reminders.filter(r => !r.isDone && r.date >= new Date().toISOString().split('T')[0]).length > 0 ? String(reminders.filter(r => !r.isDone && r.date >= new Date().toISOString().split('T')[0]).length) : null },
+            ].map(item => (
+              <button key={item.id} onClick={() => setActiveTab(item.id)}
+                className={`techo-tab w-full pl-3 pr-2 py-2 text-left flex items-center gap-2 cursor-pointer ${
+                  activeTab === item.id ? 'active' : 'text-[#6e685a] hover:bg-white/60 hover:text-[#3c3830]'
+                }`}>
+                {item.icon}
+                <span className="flex-1 min-w-0">
+                  <span className="block text-[11px] font-semibold leading-tight truncate">{item.label}</span>
+                  {item.sub && activeTab !== item.id && (
+                    <span className="block text-[9px] text-[#a19c8d] leading-tight truncate">{item.sub}</span>
+                  )}
                 </span>
-              )}
-            </button>
+                {item.badge && (
+                  <span className="text-[9px] font-bold bg-amber-400 text-white px-1 rounded-full shrink-0">{item.badge}</span>
+                )}
+              </button>
+            ))}
 
-            <button
-              onClick={() => setActiveTab('self_growth')}
-              className={`w-full p-2 text-xs font-semibold rounded text-left flex items-center gap-2 transition-all cursor-pointer ${
-                activeTab === 'self_growth' 
-                  ? 'bg-white border-l-4 border-techo-teal text-[#333] shadow-xs font-bold' 
-                  : 'text-[#6e685a] hover:bg-white/60 hover:text-black'
+            <div className="h-px bg-[var(--card-border,#eae6d8)] mx-3 my-1" />
+
+            <button onClick={() => setActiveTab('database')}
+              className={`techo-tab w-full pl-3 pr-2 py-2 text-left flex items-center gap-2 cursor-pointer mb-1 ${
+                activeTab === 'database'
+                  ? 'active'
+                  : 'text-orange-700 hover:bg-orange-50'
               }`}
-            >
-              <Sparkles size={14} className="text-techo-teal" />
-              <span>成长・愿望技能树</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('work')}
-              className={`w-full p-2 text-xs font-semibold rounded text-left flex items-center gap-2 transition-all cursor-pointer ${
-                activeTab === 'work' 
-                  ? 'bg-white border-l-4 border-techo-teal text-[#333] shadow-xs font-bold' 
-                  : 'text-[#6e685a] hover:bg-white/60 hover:text-black'
-              }`}
-            >
-              <Briefcase size={14} className="text-[#e29453]" />
-              <span>工作・项目目标 OKR</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('hobby')}
-              className={`w-full p-2 text-xs font-semibold rounded text-left flex items-center gap-2 transition-all cursor-pointer ${
-                activeTab === 'hobby' 
-                  ? 'bg-white border-l-4 border-techo-teal text-[#333] shadow-xs font-bold' 
-                  : 'text-[#6e685a] hover:bg-white/60 hover:text-black'
-              }`}
-            >
-              <Heart size={14} className="text-techo-pink" />
-              <span>个人兴趣・书影收单</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('media')}
-              className={`w-full p-2 text-xs font-semibold rounded text-left flex items-center gap-2 transition-all cursor-pointer ${
-                activeTab === 'media' 
-                  ? 'bg-white border-l-4 border-techo-teal text-[#333] shadow-xs font-bold' 
-                  : 'text-[#6e685a] hover:bg-white/60 hover:text-black'
-              }`}
-            >
-              <MessageSquareCode size={14} className="text-purple-600" />
-              <span>自媒体・副业运营</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('parenting')}
-              className={`w-full p-2 text-xs font-semibold rounded text-left flex items-center gap-2 transition-all cursor-pointer ${
-                activeTab === 'parenting' 
-                  ? 'bg-white border-l-4 border-techo-teal text-[#333] shadow-xs font-bold' 
-                  : 'text-[#6e685a] hover:bg-white/60 hover:text-black'
-              }`}
-            >
-              <Baby size={14} className="text-[#e09453]" />
-              <span>养育孩子・生息守护</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('diary')}
-              className={`w-full p-2 text-xs font-semibold rounded text-left flex items-center gap-2 transition-all cursor-pointer ${
-                activeTab === 'diary'
-                  ? 'bg-white border-l-4 border-techo-teal text-[#333] shadow-xs font-bold'
-                  : 'text-[#6e685a] hover:bg-white/60 hover:text-black'
-              }`}
-            >
-              <BookOpen size={14} className="text-techo-teal" />
-              <span>随笔・心境日记本</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('inbox')}
-              className={`w-full p-2 text-xs font-semibold rounded text-left flex items-center gap-2 transition-all cursor-pointer ${
-                activeTab === 'inbox'
-                  ? 'bg-white border-l-4 border-techo-teal text-[#333] shadow-xs font-bold'
-                  : 'text-[#6e685a] hover:bg-white/60 hover:text-black'
-              }`}
-            >
-              <Inbox size={14} className="text-amber-500" />
-              <span className="flex-1">信息收集箱</span>
-              {inboxItems.filter(i => !i.isReviewed).length > 0 && (
-                <span className="text-[9px] font-bold bg-amber-400 text-white px-1 rounded-full leading-none py-0.5">
-                  {inboxItems.filter(i => !i.isReviewed).length}
-                </span>
-              )}
-            </button>
-
-            <button
-              onClick={() => setActiveTab('fitness')}
-              className={`w-full p-2 text-xs font-semibold rounded text-left flex items-center gap-2 transition-all cursor-pointer ${
-                activeTab === 'fitness'
-                  ? 'bg-white border-l-4 border-techo-teal text-[#333] shadow-xs font-bold'
-                  : 'text-[#6e685a] hover:bg-white/60 hover:text-black'
-              }`}
-            >
-              <Activity size={14} className="text-emerald-500" />
-              <span>健康・运动打卡</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('reminders')}
-              className={`w-full p-2 text-xs font-semibold rounded text-left flex items-center gap-2 transition-all cursor-pointer ${
-                activeTab === 'reminders'
-                  ? 'bg-white border-l-4 border-techo-teal text-[#333] shadow-xs font-bold'
-                  : 'text-[#6e685a] hover:bg-white/60 hover:text-black'
-              }`}
-            >
-              <Bell size={14} className="text-[#8a816c]" />
-              <span className="flex-1">计划提醒</span>
-              {reminders.filter(r => !r.isDone && r.date >= new Date().toISOString().split('T')[0]).length > 0 && (
-                <span className="text-[9px] font-bold bg-[#8a816c] text-white px-1 rounded-full leading-none py-0.5">
-                  {reminders.filter(r => !r.isDone && r.date >= new Date().toISOString().split('T')[0]).length}
-                </span>
-              )}
-            </button>
-
-            <div className="h-[1px] bg-[#eae6d8] my-1.5" />
-
-            <button
-              onClick={() => setActiveTab('database')}
-              className={`w-full p-2 text-xs font-semibold rounded text-left flex items-center gap-2 transition-all cursor-pointer ${
-                activeTab === 'database' 
-                  ? 'bg-white border-l-4 border-orange-500 text-orange-400 shadow-xs font-bold' 
-                  : 'text-orange-950 hover:bg-orange-100/40 text-orange-800'
-              }`}
-            >
-              <Database size={14} className="text-orange-500 animate-pulse" />
-              <span>D1 数据库管理</span>
+              style={activeTab === 'database' ? { '--sidebar-active-bg': '#ea580c', '--sidebar-active-text': '#fff' } as React.CSSProperties : {}}>
+              <Database size={13} className="text-orange-500" />
+              <span className="text-[11px] font-semibold">D1 数据库</span>
             </button>
           </aside>
 

@@ -7,7 +7,6 @@
   --font-mono: "Fira Code", monospace;
   --font-serif: "Lora", Georgia, serif;
 
-  /* Custom Japan stationery colors */
   --color-techo-cream: #fbfaf5;
   --color-techo-cream-darker: #f5f3e9;
   --color-techo-grid: rgba(220, 215, 201, 0.4);
@@ -18,52 +17,77 @@
   --color-techo-teal: #4b8f8c;
 }
 
-/* Custom Kokuyo Paper Grid Pattern */
+/* ── Paper grid ── */
 .techo-grid-bg {
-  background-image: 
+  background-image:
     linear-gradient(to right, var(--color-techo-grid) 1px, transparent 1px),
     linear-gradient(to bottom, var(--color-techo-grid) 1px, transparent 1px);
   background-size: 18px 18px;
 }
 
-/* Vertical schedule axis */
 .timeline-hour-grid {
   background-image: linear-gradient(to bottom, var(--color-techo-grid) 1px, transparent 1px);
-  background-size: 100% 40px; /* 40px per hour box */
+  background-size: 100% 40px;
 }
 
-/* Notebook Perforations (punched binder holes) */
-.notebook-binder-ring {
-  background: radial-gradient(circle, #e5e5e5 35%, transparent 40%),
-              radial-gradient(circle, #ffffff 45%, #d1d1d1 60%, transparent 65%);
+/* ── Notebook spine texture ── */
+.techo-spine {
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent,
+    transparent 6px,
+    rgba(0,0,0,0.06) 6px,
+    rgba(0,0,0,0.06) 7px
+  );
 }
 
-.notebook-perforation {
-  background-image: radial-gradient(circle, #e2dfd5 40%, transparent 45%);
-  background-size: 12px 12px;
+/* ── Sidebar tab dividers — the signature element ──
+   Active item appears to "stick out" from the right edge like a physical tab */
+.techo-tab {
+  position: relative;
+  transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 4px 0 0 4px;
+  margin-right: -1px;        /* overlap the border of the main panel */
 }
 
-/* Custom Scrollbar for Hand Planner feel */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-::-webkit-scrollbar-track {
-  background: #fbfaf5;
-}
-::-webkit-scrollbar-thumb {
-  background: #d4cfc3;
-  border-radius: 3px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: #c3beaf;
+.techo-tab.active {
+  background-color: var(--sidebar-active-bg, #8a816c);
+  color: var(--sidebar-active-text, #ffffff);
+  border-right: 1px solid var(--sidebar-active-bg, #8a816c);
+  box-shadow: 2px 0 6px rgba(0,0,0,0.10);
+  z-index: 1;
 }
 
+.techo-tab.active svg {
+  color: var(--sidebar-active-text, #ffffff);
+  opacity: 0.9;
+}
+
+/* ── Cover label sticker (edition badge) ── */
+.techo-sticker {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 2px;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  background: var(--color-techo-teal);
+  color: white;
+  box-shadow: 1px 1px 0 rgba(0,0,0,0.15);
+}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: #fbfaf5; }
+::-webkit-scrollbar-thumb { background: #d4cfc3; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #c3beaf; }
+
+/* ── Print ── */
 @media print {
   body > * { display: none !important; }
   #__print_frame__ { display: block !important; }
 }
-
 #__print_frame__ { display: none; }
 
 @media print {
@@ -72,32 +96,24 @@
   body.printing-baby #__baby_print_clone__ { transform-origin: top left; zoom: 0.75; }
   @page { size: A4 portrait; margin: 8mm; }
 }
+
+/* ── Animations ── */
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes cellPopIn {
-  0% {
-    opacity: 0;
-    transform: scale(0.9) translateY(4px);
-  }
-  60% {
-    transform: scale(1.02) translateY(-1px);
-  }
-  100% {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-  }
+  0%   { opacity: 0; transform: scale(0.9) translateY(4px); }
+  60%  { transform: scale(1.02) translateY(-1px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
 }
 
-.animate-fade-in {
-  animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+@keyframes tabSlideIn {
+  from { opacity: 0; transform: translateX(-6px); }
+  to   { opacity: 1; transform: translateX(0); }
 }
 
-.animate-cell-pop {
-  animation: cellPopIn 0.28s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-  transform-origin: center center;
-}
-
-
+.animate-fade-in  { animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+.animate-cell-pop { animation: cellPopIn 0.28s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; transform-origin: center center; }
+.animate-tab-in   { animation: tabSlideIn 0.2s ease forwards; }
