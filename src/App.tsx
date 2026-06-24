@@ -1237,6 +1237,7 @@ export default function App() {
               { id: 'encounter', label: 'Encounter', url: 'https://encounter-app.pages.dev', dot: '#a78bfa' },
               { id: 'techo', label: 'Techo App', url: '#', dot: '#f59e0b' },
               { id: 'phd', label: 'PhD Toolkit', url: 'https://phd-app-toolkit.pages.dev', dot: '#fb7185' },
+              { id: 'lexiextract', label: 'LexiExtract', url: 'https://lexiextract-pro.pages.dev', dot: '#1C4ED8' },
             ].map(p => (
               p.id === 'techo' ? (
                 <span key={p.id} className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200 text-[10px] font-bold">
