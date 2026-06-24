@@ -990,27 +990,7 @@ export default function TechoGrid({
           </div>
         </div>
 
-        {/* 📖 手帐说明 (Guide) Card */}
-        <div className="bg-[#fcfbfa] border border-[#d3cfc3] p-3.5 rounded-lg text-xs text-[#5c5647] space-y-1.5 shadow-xxs font-sans">
-          <h4 className="font-display font-black text-xs text-[#4a473e] flex items-center gap-1.5 border-b border-[#eae6d8] pb-1.5">
-            📖 手帐说明 (Guide)
-          </h4>
-          <ul className="space-y-1.5 text-[#5c5647] leading-relaxed list-disc list-inside">
-            <li><b>24小时周计划网格</b>：右侧为核心的垂直时间轴，可以记录每小时的任务。</li>
-            <li><b>轻量激活书写</b>：单击工作区任意格子即可快速输入、选择高亮分类并存入周表。</li>
-            <li><b>经典国誉手帐配色</b>：采用精美奶油纸质底色与高质感荧光标注。</li>
-            <li>
-              <b>⌨️ 键盘高效联动</b>：
-              <div className="pl-4 mt-1 space-y-1 font-sans text-[10px] text-[#716955] bg-[#fbfaf5] p-2 rounded border border-[#eae6d8]/60">
-                <div>• <kbd className="px-1 py-0.5 bg-white border border-gray-300 rounded text-[9.5px]">←</kbd> / <kbd className="px-1 py-0.5 bg-white border border-gray-300 rounded text-[9.5px]">→</kbd> 键：横向切换选中日期列</div>
-                <div>• <kbd className="px-1 py-0.5 bg-white border border-gray-300 rounded text-[9.5px]">↑</kbd> / <kbd className="px-1 py-0.5 bg-white border border-gray-300 rounded text-[9.5px]">↓</kbd> 键：纵向切换活动时间块</div>
-                <div>• <kbd className="px-1 py-0.5 bg-white border border-gray-300 rounded text-[9.5px]">Enter</kbd> 键：快速唤醒所选时间格子编辑</div>
-              </div>
-            </li>
-          </ul>
-        </div>
-
-        {/* Highlight Color Presets Legend */}
+{/* Highlight Color Presets Legend */}
         <div className="bg-white border border-[#d5cfbe] p-3 rounded-lg shadow-xxs">
           <h4 className="text-xs font-semibold text-[#5a554a] mb-2 font-display">🎨 荧光分类笔 legend</h4>
           <div className="space-y-1.5">
