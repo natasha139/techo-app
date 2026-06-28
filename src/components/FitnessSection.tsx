@@ -244,29 +244,65 @@ export default function FitnessSection({ logs, onAdd, onDelete, periodLogs, onAd
                 </div>
               ) : (
                 <div>
-                  {/* Simple bar chart */}
-                  <div className="flex items-end gap-1 h-40 mb-3 px-1">
-                    {weightLogs.map((log, i) => {
-                      const vals = weightLogs.map(l => l.weight!);
-                      const min = Math.min(...vals);
-                      const max = Math.max(...vals);
-                      const range = max - min || 1;
-                      const pct = ((log.weight! - min) / range) * 70 + 25;
-                      const isLast = i === weightLogs.length - 1;
-                      return (
-                        <div key={log.id} className="flex-1 flex flex-col items-center gap-1 group">
-                          <div className="text-[8px] font-mono text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity">
-                            {log.weight}
-                          </div>
-                          <div
-                            className={`w-full rounded-t transition-all ${isLast ? 'bg-techo-teal' : 'bg-teal-200 group-hover:bg-teal-300'}`}
-                            style={{ height: `${pct}%` }}
-                          />
-                          <div className="text-[7px] font-mono text-gray-400 rotate-0 whitespace-nowrap">{log.date.slice(5)}</div>
-                        </div>
-                      );
-                    })}
-                  </div>
+                  {/* SVG line chart */}
+                  {(() => {
+                    const vals = weightLogs.map(l => l.weight!);
+                    const minV = Math.min(...vals);
+                    const maxV = Math.max(...vals);
+                    const range = maxV - minV || 1;
+                    const W = 600, H = 140, PAD = { t: 16, b: 28, l: 36, r: 12 };
+                    const iW = W - PAD.l - PAD.r;
+                    const iH = H - PAD.t - PAD.b;
+                    const n = weightLogs.length;
+                    const px = (i: number) => PAD.l + (n === 1 ? iW / 2 : (i / (n - 1)) * iW);
+                    const py = (v: number) => PAD.t + iH - ((v - minV) / range) * iH;
+                    const pts = weightLogs.map((l, i) => `${px(i)},${py(l.weight!)}`);
+                    const polyline = pts.join(' ');
+                    const areaPath = `M${px(0)},${H - PAD.b} ` +
+                      pts.map(p => `L${p}`).join(' ') +
+                      ` L${px(n - 1)},${H - PAD.b} Z`;
+                    // y-axis labels
+                    const yLabels = [minV, (minV + maxV) / 2, maxV];
+                    return (
+                      <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ height: 160 }}>
+                        <defs>
+                          <linearGradient id="wg" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="#4caf9a" stopOpacity="0.25" />
+                            <stop offset="100%" stopColor="#4caf9a" stopOpacity="0.02" />
+                          </linearGradient>
+                        </defs>
+                        {/* grid lines */}
+                        {yLabels.map((v, i) => (
+                          <g key={i}>
+                            <line x1={PAD.l} x2={W - PAD.r} y1={py(v)} y2={py(v)}
+                              stroke="#e8e4da" strokeWidth="1" strokeDasharray="3 3" />
+                            <text x={PAD.l - 4} y={py(v) + 3} textAnchor="end"
+                              fontSize="8" fill="#a09888" fontFamily="monospace">
+                              {v.toFixed(1)}
+                            </text>
+                          </g>
+                        ))}
+                        {/* area fill */}
+                        <path d={areaPath} fill="url(#wg)" />
+                        {/* line */}
+                        <polyline points={polyline} fill="none" stroke="#4caf9a" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
+                        {/* dots + date labels */}
+                        {weightLogs.map((log, i) => (
+                          <g key={log.id}>
+                            <circle cx={px(i)} cy={py(log.weight!)} r="3"
+                              fill={i === n - 1 ? '#4caf9a' : '#fff'}
+                              stroke="#4caf9a" strokeWidth="2" />
+                            {(n <= 12 || i % Math.ceil(n / 10) === 0 || i === n - 1) && (
+                              <text x={px(i)} y={H - PAD.b + 10} textAnchor="middle"
+                                fontSize="7" fill="#a09888" fontFamily="monospace">
+                                {log.date.slice(5)}
+                              </text>
+                            )}
+                          </g>
+                        ))}
+                      </svg>
+                    );
+                  })()}
 
                   {/* Stats row */}
                   <div className="grid grid-cols-3 gap-3 mt-4">
