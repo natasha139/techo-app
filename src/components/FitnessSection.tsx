@@ -6,13 +6,14 @@
 import React, { useState } from 'react';
 import {
   Dumbbell, Utensils, Scale, Trash2, Plus,
-  TrendingDown, TrendingUp, Minus, Flame, Heart
+  TrendingDown, TrendingUp, Minus, Flame, Heart, Pencil, Check, X
 } from 'lucide-react';
 import { FitnessLog, PeriodLog } from '../types';
 
 interface FitnessSectionProps {
   logs: FitnessLog[];
   onAdd: (item: Omit<FitnessLog, 'id'>) => void;
+  onUpdate: (id: string, fields: Partial<FitnessLog>) => void;
   onDelete: (id: string) => void;
   periodLogs: PeriodLog[];
   onAddPeriod: (date: string) => void;
@@ -25,8 +26,10 @@ const EXERCISE_PRESETS = [
 
 type FitnessTab = 'log' | 'weight' | 'meals' | 'period';
 
-export default function FitnessSection({ logs, onAdd, onDelete, periodLogs, onAddPeriod, onDeletePeriod }: FitnessSectionProps) {
+export default function FitnessSection({ logs, onAdd, onUpdate, onDelete, periodLogs, onAddPeriod, onDeletePeriod }: FitnessSectionProps) {
   const [activeTab, setActiveTab] = useState<FitnessTab>('log');
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editFields, setEditFields] = useState<Partial<FitnessLog>>({});
 
   const today = new Date().toISOString().slice(0, 10);
 
@@ -182,8 +185,64 @@ export default function FitnessSection({ logs, onAdd, onDelete, periodLogs, onAd
                     <Dumbbell size={24} className="mx-auto mb-2 opacity-20" />
                     <p>还没有打卡记录，从今天开始吧</p>
                   </div>
-                ) : sortedLogs.map(log => (
-                  <div key={log.id} className="flex items-start gap-3 bg-white border border-[#e8e4da] rounded-md px-3 py-2.5 group hover:border-teal-200 transition-colors">
+                ) : sortedLogs.map(log => {
+                  const isEditing = editingId === log.id;
+                  if (isEditing) {
+                    return (
+                      <div key={log.id} className="bg-teal-50/30 border border-teal-200 rounded-md px-3 py-2.5 space-y-2">
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                          <div>
+                            <label className="block text-[10px] font-bold text-gray-500 mb-0.5">日期</label>
+                            <input type="date" value={editFields.date ?? log.date}
+                              onChange={e => setEditFields(f => ({ ...f, date: e.target.value }))}
+                              className="w-full bg-white border border-[#c2bdae] p-1.5 rounded text-xs focus:outline-none focus:ring-1 focus:ring-teal-400" />
+                          </div>
+                          <div>
+                            <label className="block text-[10px] font-bold text-gray-500 mb-0.5">体重 (kg)</label>
+                            <input type="number" step="0.1" value={editFields.weight ?? log.weight ?? ''}
+                              onChange={e => setEditFields(f => ({ ...f, weight: e.target.value ? parseFloat(e.target.value) : undefined }))}
+                              className="w-full bg-white border border-[#c2bdae] p-1.5 rounded text-xs focus:outline-none focus:ring-1 focus:ring-teal-400" />
+                          </div>
+                          <div>
+                            <label className="block text-[10px] font-bold text-gray-500 mb-0.5">运动类型</label>
+                            <input type="text" value={editFields.exercise ?? log.exercise ?? ''}
+                              onChange={e => setEditFields(f => ({ ...f, exercise: e.target.value || undefined }))}
+                              className="w-full bg-white border border-[#c2bdae] p-1.5 rounded text-xs focus:outline-none focus:ring-1 focus:ring-teal-400" />
+                          </div>
+                          <div>
+                            <label className="block text-[10px] font-bold text-gray-500 mb-0.5">时长 (分钟)</label>
+                            <input type="number" value={editFields.duration ?? log.duration ?? ''}
+                              onChange={e => setEditFields(f => ({ ...f, duration: e.target.value ? parseInt(e.target.value) : undefined }))}
+                              className="w-full bg-white border border-[#c2bdae] p-1.5 rounded text-xs focus:outline-none focus:ring-1 focus:ring-teal-400" />
+                          </div>
+                          <div>
+                            <label className="block text-[10px] font-bold text-gray-500 mb-0.5">热量 (kcal)</label>
+                            <input type="number" value={editFields.calories ?? log.calories ?? ''}
+                              onChange={e => setEditFields(f => ({ ...f, calories: e.target.value ? parseInt(e.target.value) : undefined }))}
+                              className="w-full bg-white border border-[#c2bdae] p-1.5 rounded text-xs focus:outline-none focus:ring-1 focus:ring-teal-400" />
+                          </div>
+                          <div className="sm:col-span-3">
+                            <label className="block text-[10px] font-bold text-gray-500 mb-0.5">备注</label>
+                            <input type="text" value={editFields.note ?? log.note ?? ''}
+                              onChange={e => setEditFields(f => ({ ...f, note: e.target.value || undefined }))}
+                              className="w-full bg-white border border-[#c2bdae] p-1.5 rounded text-xs focus:outline-none focus:ring-1 focus:ring-teal-400" />
+                          </div>
+                        </div>
+                        <div className="flex gap-2 justify-end">
+                          <button type="button" onClick={() => setEditingId(null)}
+                            className="flex items-center gap-1 px-2 py-1 text-[10px] font-bold text-gray-500 border border-gray-300 rounded hover:bg-gray-50 cursor-pointer">
+                            <X size={10} />取消
+                          </button>
+                          <button type="button" onClick={() => { onUpdate(log.id, editFields); setEditingId(null); setEditFields({}); }}
+                            className="flex items-center gap-1 px-2 py-1 text-[10px] font-bold text-white bg-techo-teal rounded hover:bg-techo-teal/80 cursor-pointer">
+                            <Check size={10} />保存
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  }
+                  return (
+                    <div key={log.id} className="flex items-start gap-3 bg-white border border-[#e8e4da] rounded-md px-3 py-2.5 group hover:border-teal-200 transition-colors">
                     <div className="shrink-0 text-center min-w-[40px]">
                       <div className="text-[10px] font-mono font-bold text-techo-teal">{log.date.slice(5)}</div>
                       <div className="text-[9px] text-gray-400 font-mono">{log.date.slice(0, 4)}</div>
@@ -207,12 +266,17 @@ export default function FitnessSection({ logs, onAdd, onDelete, periodLogs, onAd
                       )}
                       {log.note && <span className="text-[11px] text-gray-500 italic">{log.note}</span>}
                     </div>
+                    <button onClick={() => { setEditingId(log.id); setEditFields({}); }}
+                      className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-techo-teal cursor-pointer p-1 transition-all shrink-0">
+                      <Pencil size={11} />
+                    </button>
                     <button onClick={() => onDelete(log.id)}
                       className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-400 cursor-pointer p-1 transition-all shrink-0">
                       <Trash2 size={11} />
                     </button>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}
