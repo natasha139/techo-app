@@ -1178,6 +1178,7 @@ export default function DiarySection({
   // States
   const inspirationRef = React.useRef<InspirationCapsuleRef>(null);
   const textareaRef = React.useRef<HTMLTextAreaElement>(null);
+  const editPanelRef = React.useRef<HTMLDivElement>(null);
 
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(
     diaryNotes.length > 0 ? diaryNotes[0].id : null
@@ -1519,6 +1520,9 @@ export default function DiarySection({
     setSelectedNoteId(null);
     setIsEditing(true);
     setIsPreview(false);
+    setTimeout(() => {
+      editPanelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 50);
   };
 
   return (
@@ -1746,7 +1750,7 @@ export default function DiarySection({
       </div>
 
       {/* ================= RIGHT FORM OR VIEW: NOTEBOOK PAGE ================= */}
-      <div className="lg:col-span-8 bg-white border-2 border-[#d3cfc3] rounded-lg p-6 shadow-sm relative overflow-hidden min-h-[580px] flex flex-col">
+      <div ref={editPanelRef} className="lg:col-span-8 bg-white border-2 border-[#d3cfc3] rounded-lg p-6 shadow-sm relative overflow-hidden min-h-[580px] flex flex-col">
         {/* Notebook binding effects (little dotted grid background inside the note area to resemble Jibun memo page) */}
         <div className="absolute top-0 bottom-0 left-0 w-3 flex flex-col justify-between py-6 -ml-1 border-r border-[#bebaaa]/20 bg-[#fdfdfb]">
           {Array.from({ length: 20 }).map((_, i) => (
