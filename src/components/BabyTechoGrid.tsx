@@ -480,7 +480,7 @@ export default function BabyTechoGrid({
       {/* Cell edit modal */}
       {editingSlot && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30" onClick={() => setEditingSlot(null)}>
-          <div className="bg-white rounded-xl shadow-xl border border-pink-200 p-5 w-80 space-y-3" onClick={e => e.stopPropagation()}>
+          <div className="bg-white rounded-xl shadow-xl border border-pink-200 p-5 w-80 space-y-3 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between">
               <h4 className="text-sm font-bold text-[#c06080]">
                 🌱 {daysOfWeek[editingSlot.dayIndex].text} {String(editingSlot.hour).padStart(2, '0')}:00
