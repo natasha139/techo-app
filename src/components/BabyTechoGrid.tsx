@@ -393,11 +393,11 @@ export default function BabyTechoGrid({
                     <div
                       key={hour}
                       onClick={() => openCell(dayIdx, hour)}
-                      className="h-10 cursor-pointer hover:bg-pink-50/50 transition-colors relative group"
+                      className="min-h-10 cursor-pointer hover:bg-pink-50/50 transition-colors relative group"
                       style={cell ? { backgroundColor: cell.color, borderLeft: `2px solid ${colorPresets.find(cp => cp.bg === cell.color)?.border || '#fbcfe8'}` } : {}}
                     >
                       {cell && (
-                        <span className="block px-1 py-0.5 text-[10px] leading-tight font-medium text-[#3c3830] truncate">
+                        <span className="block px-1 py-0.5 text-[10px] leading-tight font-medium text-[#3c3830] whitespace-normal break-words">
                           {cell.text}
                         </span>
                       )}
