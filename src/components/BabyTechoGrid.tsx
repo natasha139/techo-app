@@ -397,9 +397,11 @@ export default function BabyTechoGrid({
                       style={cell ? { backgroundColor: cell.color, borderLeft: `2px solid ${colorPresets.find(cp => cp.bg === cell.color)?.border || '#fbcfe8'}` } : {}}
                     >
                       {cell && (
-                        <span className="block px-1 py-0.5 text-[10px] leading-tight font-medium text-[#3c3830] whitespace-normal break-words">
-                          {cell.text}
-                        </span>
+                        <div className="px-1 py-0.5 text-[10px] leading-snug font-medium text-[#3c3830]">
+                          {cell.text.split(/(?=[①②③④⑤⑥⑦⑧⑨⑩])/).map((seg, i) => (
+                            <div key={i} className="break-words">{seg.trim()}</div>
+                          ))}
+                        </div>
                       )}
                       {!cell && (
                         <span className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-30 text-[10px] text-pink-400 select-none">+</span>
