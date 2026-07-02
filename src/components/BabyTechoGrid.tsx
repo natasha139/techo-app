@@ -169,27 +169,35 @@ export default function BabyTechoGrid({
   }, [todayNotes]);
 
   const [editingSlot, setEditingSlot] = useState<{ dayIndex: number; hour: number } | null>(null);
-  const [editItems, setEditItems] = useState<string[]>(['']);
+  const [editItems, setEditItems] = useState<{ text: string; done: boolean }[]>([{ text: '', done: false }]);
   const [editColorIdx, setEditColorIdx] = useState(0);
 
   const openCell = (dayIdx: number, hour: number) => {
     const existing = renderedCells.find(c => c.id.endsWith(`-${dayIdx}-${hour}`));
-    const items = existing?.text ? existing.text.split('\n').filter(s => s.trim()) : [''];
-    setEditItems(items.length ? items : ['']);
+    const items = existing?.text
+      ? existing.text.split('\n').filter(s => s.trim()).map(s => ({
+          done: s.startsWith('[x]'),
+          text: s.startsWith('[x]') ? s.slice(3) : s,
+        }))
+      : [{ text: '', done: false }];
+    setEditItems(items.length ? items : [{ text: '', done: false }]);
     setEditColorIdx(existing?.color ? colorPresets.findIndex(cp => cp.bg === existing.color) : 0);
     setEditingSlot({ dayIndex: dayIdx, hour });
   };
 
   const saveCell = () => {
     if (!editingSlot) return;
-    const joined = editItems.map(s => s.trim()).filter(Boolean).join('\n');
+    const joined = editItems
+      .filter(it => it.text.trim())
+      .map(it => (it.done ? '[x]' : '') + it.text.trim())
+      .join('\n');
     if (joined) {
       onSaveCell(editingSlot.dayIndex, editingSlot.hour, joined, colorPresets[editColorIdx >= 0 ? editColorIdx : 0].bg);
     } else {
       onClearCell(editingSlot.dayIndex, editingSlot.hour);
     }
     setEditingSlot(null);
-    setEditItems(['']);
+    setEditItems([{ text: '', done: false }]);
   };
 
   const [editingNoteDay, setEditingNoteDay] = useState<number | null>(null);
@@ -400,9 +408,13 @@ export default function BabyTechoGrid({
                     >
                       {cell && (
                         <div className="px-1 py-0.5 text-[10px] leading-snug font-medium text-[#3c3830]">
-                          {cell.text.split('\n').filter(Boolean).map((seg, i) => (
-                            <div key={i} className="break-words">{seg}</div>
-                          ))}
+                          {cell.text.split('\n').filter(Boolean).map((seg, i) => {
+                            const done = seg.startsWith('[x]');
+                            const label = done ? seg.slice(3) : seg;
+                            return (
+                              <div key={i} className={`break-words ${done ? 'line-through text-gray-400' : ''}`}>{label}</div>
+                            );
+                          })}
                         </div>
                       )}
                       {!cell && (
@@ -474,18 +486,28 @@ export default function BabyTechoGrid({
             <div className="space-y-1.5">
               {editItems.map((item, i) => (
                 <div key={i} className="flex gap-1 items-center">
-                  <span className="text-[10px] text-pink-300 w-4 shrink-0 text-center">{i + 1}</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const next = [...editItems];
+                      next[i] = { ...next[i], done: !next[i].done };
+                      setEditItems(next);
+                    }}
+                    className={`w-4 h-4 shrink-0 rounded border flex items-center justify-center cursor-pointer transition-colors ${item.done ? 'bg-pink-400 border-pink-400 text-white' : 'border-pink-300 hover:border-pink-400'}`}
+                  >
+                    {item.done && <Check size={9} />}
+                  </button>
                   <input
                     type="text"
-                    value={item}
+                    value={item.text}
                     onChange={e => {
                       const next = [...editItems];
-                      next[i] = e.target.value;
+                      next[i] = { ...next[i], text: e.target.value };
                       setEditItems(next);
                     }}
                     placeholder={`第 ${i + 1} 项...`}
                     autoFocus={i === 0}
-                    className="flex-1 border border-pink-200 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-pink-300 font-sans"
+                    className={`flex-1 border border-pink-200 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-pink-300 font-sans ${item.done ? 'line-through text-gray-400' : ''}`}
                   />
                   {editItems.length > 1 && (
                     <button type="button" onClick={() => setEditItems(editItems.filter((_, j) => j !== i))} className="text-gray-300 hover:text-red-400 cursor-pointer">
@@ -496,7 +518,7 @@ export default function BabyTechoGrid({
               ))}
               <button
                 type="button"
-                onClick={() => setEditItems([...editItems, ''])}
+                onClick={() => setEditItems([...editItems, { text: '', done: false }])}
                 className="text-[10px] text-pink-400 hover:text-pink-600 cursor-pointer flex items-center gap-0.5 pl-5"
               >
                 <Plus size={10} /> 添加一条
