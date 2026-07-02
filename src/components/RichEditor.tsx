@@ -141,22 +141,7 @@ export default function RichEditor({
   function handleImagePick(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = ev => {
-      const dataUri = ev.target?.result as string;
-      editorRef.current?.focus();
-      // Build safe img tag with only data URI (no script injection possible)
-      const imgHtml = `<img src="${dataUri}" alt="${file.name.replace(/"/g, '')}" style="max-width:100%;height:auto;border-radius:4px;display:block;margin:4px 0;" class="rich-img" />`;
-      document.execCommand('insertHTML', false, imgHtml);
-      emitChange();
-
-      const att: InboxAttachment = {
-        id: uid(), name: file.name, type: 'image',
-        mimeType: file.type, size: file.size, data: dataUri,
-      };
-      onAttachmentsChange?.([...attachments, att]);
-    };
-    reader.readAsDataURL(file);
+    processImageFile(file);
     e.target.value = '';
   }
 
@@ -185,10 +170,36 @@ export default function RichEditor({
     onAttachmentsChange?.(attachments.filter(a => a.id !== id));
   }
 
+  const [isDragOver, setIsDragOver] = useState(false);
+
+  function processImageFile(file: File) {
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const dataUri = ev.target?.result as string;
+      editorRef.current?.focus();
+      const imgHtml = `<img src="${dataUri}" alt="${file.name.replace(/"/g, '')}" style="max-width:100%;height:auto;border-radius:4px;display:block;margin:4px 0;" class="rich-img" />`;
+      document.execCommand('insertHTML', false, imgHtml);
+      emitChange();
+      const att: InboxAttachment = {
+        id: uid(), name: file.name, type: 'image',
+        mimeType: file.type, size: file.size, data: dataUri,
+      };
+      onAttachmentsChange?.([...attachments, att]);
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function handleDrop(e: React.DragEvent<HTMLDivElement>) {
+    e.preventDefault();
+    setIsDragOver(false);
+    const file = Array.from(e.dataTransfer.files).find(f => f.type.startsWith('image/'));
+    if (file) processImageFile(file);
+  }
+
   const isEmpty = !value || value === '<br>' || value.trim() === '';
 
   return (
-    <div className={`rounded border transition-all ${focused ? 'border-amber-400 ring-1 ring-amber-400/40' : 'border-[#c2bdae]'} bg-white overflow-hidden`}>
+    <div className={`rounded border transition-all ${isDragOver ? 'border-amber-500 ring-2 ring-amber-300/60' : focused ? 'border-amber-400 ring-1 ring-amber-400/40' : 'border-[#c2bdae]'} bg-white overflow-hidden`}>
       {/* Toolbar */}
       <div className="flex items-center gap-0.5 px-2 py-1.5 border-b border-[#ebe7da] bg-[#faf8f3]">
         <ToolBtn title="加粗 (Cmd+B)" onClick={() => execCmd('bold')}><Bold size={12} /></ToolBtn>
@@ -204,7 +215,12 @@ export default function RichEditor({
 
       {/* Editable area */}
       <div className="relative">
-        {isEmpty && !focused && (
+        {isDragOver && (
+          <div className="absolute inset-0 z-10 flex items-center justify-center bg-amber-50/80 border-2 border-dashed border-amber-400 rounded pointer-events-none">
+            <span className="text-[11px] text-amber-600 font-medium">松开以插入图片</span>
+          </div>
+        )}
+        {isEmpty && !focused && !isDragOver && (
           <div className="absolute inset-0 p-2 text-[11px] text-gray-400 pointer-events-none select-none leading-relaxed">
             {placeholder}
           </div>
@@ -216,6 +232,9 @@ export default function RichEditor({
           onInput={emitChange}
           onFocus={() => setFocused(true)}
           onBlur={() => { setFocused(false); emitChange(); }}
+          onDragOver={e => { e.preventDefault(); setIsDragOver(true); }}
+          onDragLeave={() => setIsDragOver(false)}
+          onDrop={handleDrop}
           style={{ minHeight }}
           className="p-2 text-xs text-[#3a3528] leading-relaxed outline-none"
         />
