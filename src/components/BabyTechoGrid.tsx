@@ -169,25 +169,27 @@ export default function BabyTechoGrid({
   }, [todayNotes]);
 
   const [editingSlot, setEditingSlot] = useState<{ dayIndex: number; hour: number } | null>(null);
-  const [editText, setEditText] = useState('');
+  const [editItems, setEditItems] = useState<string[]>(['']);
   const [editColorIdx, setEditColorIdx] = useState(0);
 
   const openCell = (dayIdx: number, hour: number) => {
     const existing = renderedCells.find(c => c.id.endsWith(`-${dayIdx}-${hour}`));
-    setEditText(existing?.text || '');
+    const items = existing?.text ? existing.text.split('\n').filter(s => s.trim()) : [''];
+    setEditItems(items.length ? items : ['']);
     setEditColorIdx(existing?.color ? colorPresets.findIndex(cp => cp.bg === existing.color) : 0);
     setEditingSlot({ dayIndex: dayIdx, hour });
   };
 
   const saveCell = () => {
     if (!editingSlot) return;
-    if (editText.trim()) {
-      onSaveCell(editingSlot.dayIndex, editingSlot.hour, editText.trim(), colorPresets[editColorIdx >= 0 ? editColorIdx : 0].bg);
+    const joined = editItems.map(s => s.trim()).filter(Boolean).join('\n');
+    if (joined) {
+      onSaveCell(editingSlot.dayIndex, editingSlot.hour, joined, colorPresets[editColorIdx >= 0 ? editColorIdx : 0].bg);
     } else {
       onClearCell(editingSlot.dayIndex, editingSlot.hour);
     }
     setEditingSlot(null);
-    setEditText('');
+    setEditItems(['']);
   };
 
   const [editingNoteDay, setEditingNoteDay] = useState<number | null>(null);
@@ -398,8 +400,8 @@ export default function BabyTechoGrid({
                     >
                       {cell && (
                         <div className="px-1 py-0.5 text-[10px] leading-snug font-medium text-[#3c3830]">
-                          {cell.text.split(/(?=[①②③④⑤⑥⑦⑧⑨⑩])/).map((seg, i) => (
-                            <div key={i} className="break-words">{seg.trim()}</div>
+                          {cell.text.split('\n').filter(Boolean).map((seg, i) => (
+                            <div key={i} className="break-words">{seg}</div>
                           ))}
                         </div>
                       )}
@@ -469,13 +471,37 @@ export default function BabyTechoGrid({
               </h4>
               <button onClick={() => setEditingSlot(null)} className="text-gray-400 hover:text-gray-600 text-xs cursor-pointer">✕</button>
             </div>
-            <textarea
-              value={editText}
-              onChange={e => setEditText(e.target.value)}
-              placeholder="记录活动内容..."
-              className="w-full border border-pink-200 rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-300 resize-none h-20 font-sans"
-              autoFocus
-            />
+            <div className="space-y-1.5">
+              {editItems.map((item, i) => (
+                <div key={i} className="flex gap-1 items-center">
+                  <span className="text-[10px] text-pink-300 w-4 shrink-0 text-center">{i + 1}</span>
+                  <input
+                    type="text"
+                    value={item}
+                    onChange={e => {
+                      const next = [...editItems];
+                      next[i] = e.target.value;
+                      setEditItems(next);
+                    }}
+                    placeholder={`第 ${i + 1} 项...`}
+                    autoFocus={i === 0}
+                    className="flex-1 border border-pink-200 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-pink-300 font-sans"
+                  />
+                  {editItems.length > 1 && (
+                    <button type="button" onClick={() => setEditItems(editItems.filter((_, j) => j !== i))} className="text-gray-300 hover:text-red-400 cursor-pointer">
+                      <X size={12} />
+                    </button>
+                  )}
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={() => setEditItems([...editItems, ''])}
+                className="text-[10px] text-pink-400 hover:text-pink-600 cursor-pointer flex items-center gap-0.5 pl-5"
+              >
+                <Plus size={10} /> 添加一条
+              </button>
+            </div>
             <div className="space-y-1">
               <p className="text-[10px] font-bold text-gray-500">活动类型</p>
               <div className="grid grid-cols-3 gap-1.5">
