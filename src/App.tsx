@@ -609,6 +609,13 @@ export default function App() {
       `DELETE FROM planner_cells WHERE id = '${id}'`);
   };
 
+  const handleCopyBabyCell = (fromDayIndex: number, fromHour: number, toDayIndex: number, toHour: number) => {
+    const fromId = `baby_${getWeekKey(weekOffset)}-${fromDayIndex}-${fromHour}`;
+    const source = babyCells.find(c => c.id === fromId);
+    if (!source) return;
+    handleSaveBabyCell(toDayIndex, toHour, source.text, source.color ?? '');
+  };
+
   const handleSaveBabyTodayNote = (dayIndex: number, text: string) => {
     const updated = { ...babyTodayNotes, [`${getWeekKey(weekOffset)}-${dayIndex}`]: text };
     setBabyTodayNotes(updated);
@@ -1632,6 +1639,7 @@ export default function App() {
                     onToggleChildGoal={handleToggleChildGoal}
                     onDeleteChildGoal={handleDeleteChildGoal}
                     onEditChildGoal={handleEditChildGoal}
+                    onCopyCell={handleCopyBabyCell}
                   />
                   );
                 })()}

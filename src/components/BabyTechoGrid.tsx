@@ -18,6 +18,7 @@ interface BabyTechoGridProps {
   onToggleChildGoal?: (id: string) => void;
   onDeleteChildGoal?: (id: string) => void;
   onEditChildGoal?: (id: string, text: string) => void;
+  onCopyCell?: (fromDayIndex: number, fromHour: number, toDayIndex: number, toHour: number) => void;
 }
 
 const colorPresets = [
@@ -142,6 +143,7 @@ export default function BabyTechoGrid({
   onToggleChildGoal,
   onDeleteChildGoal,
   onEditChildGoal,
+  onCopyCell,
 }: BabyTechoGridProps) {
   const daysOfWeek = getCurrentWeekDays(weekOffset);
   const today = new Date();
@@ -171,6 +173,8 @@ export default function BabyTechoGrid({
   const [editingSlot, setEditingSlot] = useState<{ dayIndex: number; hour: number } | null>(null);
   const [editItems, setEditItems] = useState<{ text: string; done: boolean }[]>([{ text: '', done: false }]);
   const [editColorIdx, setEditColorIdx] = useState(0);
+  const [showCopyPicker, setShowCopyPicker] = useState(false);
+  const [copyTarget, setCopyTarget] = useState<{ dayIndex: number; hour: number }>({ dayIndex: 0, hour: 8 });
 
   const openCell = (dayIdx: number, hour: number) => {
     const existing = renderedCells.find(c => c.id.endsWith(`-${dayIdx}-${hour}`));
@@ -543,17 +547,61 @@ export default function BabyTechoGrid({
             </div>
             <div className="flex gap-2">
               {renderedCells.find(c => c.id.endsWith(`-${editingSlot.dayIndex}-${editingSlot.hour}`)) && (
-                <button
-                  onClick={() => { onClearCell(editingSlot.dayIndex, editingSlot.hour); setEditingSlot(null); }}
-                  className="flex-1 py-2 text-xs font-bold text-red-500 border border-red-200 rounded-lg hover:bg-red-50 cursor-pointer"
-                >
-                  清除
-                </button>
+                <>
+                  <button
+                    onClick={() => { onClearCell(editingSlot.dayIndex, editingSlot.hour); setEditingSlot(null); }}
+                    className="py-2 px-3 text-xs font-bold text-red-500 border border-red-200 rounded-lg hover:bg-red-50 cursor-pointer"
+                  >
+                    清除
+                  </button>
+                  {onCopyCell && (
+                    <button
+                      onClick={() => setShowCopyPicker(p => !p)}
+                      className="py-2 px-3 text-xs font-bold text-blue-500 border border-blue-200 rounded-lg hover:bg-blue-50 cursor-pointer"
+                    >
+                      复制到
+                    </button>
+                  )}
+                </>
               )}
               <button onClick={saveCell} className="flex-1 py-2 text-xs font-bold bg-[#c06080] text-white rounded-lg hover:bg-[#a04060] cursor-pointer">
                 保存
               </button>
             </div>
+            {showCopyPicker && onCopyCell && (
+              <div className="border border-blue-200 rounded-lg p-3 bg-blue-50 space-y-2">
+                <p className="text-[10px] font-bold text-blue-600">复制到哪一天的哪个时段？</p>
+                <div className="flex gap-2">
+                  <select
+                    value={copyTarget.dayIndex}
+                    onChange={e => setCopyTarget(prev => ({ ...prev, dayIndex: Number(e.target.value) }))}
+                    className="flex-1 border border-blue-200 rounded px-2 py-1 text-xs focus:outline-none bg-white"
+                  >
+                    {daysOfWeek.map((d, i) => (
+                      <option key={i} value={i}>{d.text} {d.dateStr}</option>
+                    ))}
+                  </select>
+                  <select
+                    value={copyTarget.hour}
+                    onChange={e => setCopyTarget(prev => ({ ...prev, hour: Number(e.target.value) }))}
+                    className="flex-1 border border-blue-200 rounded px-2 py-1 text-xs focus:outline-none bg-white"
+                  >
+                    {Array.from({ length: 24 }, (_, i) => (
+                      <option key={i} value={i}>{String(i).padStart(2, '0')}:00</option>
+                    ))}
+                  </select>
+                </div>
+                <button
+                  onClick={() => {
+                    onCopyCell(editingSlot.dayIndex, editingSlot.hour, copyTarget.dayIndex, copyTarget.hour);
+                    setShowCopyPicker(false);
+                  }}
+                  className="w-full py-1.5 text-xs font-bold bg-blue-500 text-white rounded-lg hover:bg-blue-600 cursor-pointer"
+                >
+                  确认复制
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}
