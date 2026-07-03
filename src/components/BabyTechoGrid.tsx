@@ -175,6 +175,9 @@ export default function BabyTechoGrid({
   const [editColorIdx, setEditColorIdx] = useState(0);
   const [showCopyPicker, setShowCopyPicker] = useState(false);
   const [copyTarget, setCopyTarget] = useState<{ dayIndex: number; hour: number }>({ dayIndex: 0, hour: 8 });
+  const [showAddPicker, setShowAddPicker] = useState(false);
+  const [addPickerDay, setAddPickerDay] = useState(0);
+  const [addPickerHour, setAddPickerHour] = useState(8);
 
   const openCell = (dayIdx: number, hour: number) => {
     const existing = renderedCells.find(c => c.id.endsWith(`-${dayIdx}-${hour}`));
@@ -376,61 +379,107 @@ export default function BabyTechoGrid({
           ))}
         </div>
 
-        {/* Grid */}
-        <div ref={hourScrollRef} className="overflow-y-auto max-h-[480px] print:overflow-visible print:max-h-none">
-          <div className="grid grid-cols-15">
-            {/* Hour labels */}
-            <div className="col-span-1 border-r border-[#eae6d8]">
-              {hours.map(hour => (
-                <div
-                  key={hour}
-                  className={`h-10 flex items-center justify-center text-[9px] font-mono font-bold border-b border-[#eae6d8]/60 select-none ${
+        {/* Grid — only active hours */}
+        {(() => {
+          const activeHours = Array.from(
+            new Set(renderedCells.map(c => {
+              const parts = c.id.split('-');
+              return Number(parts[parts.length - 1]);
+            }))
+          ).sort((a, b) => a - b);
+
+          return (
+            <div ref={hourScrollRef} className="print:overflow-visible">
+              {activeHours.length === 0 && (
+                <div className="py-8 text-center text-[11px] text-gray-400">还没有计划，点下方「+ 新增时段」开始添加</div>
+              )}
+              {activeHours.map(hour => (
+                <div key={hour} className="grid grid-cols-15 border-b border-[#eae6d8]/60">
+                  <div className={`col-span-1 border-r border-[#eae6d8] flex items-center justify-center text-[9px] font-mono font-bold select-none py-1 ${
                     hour >= 6 && hour <= 21 ? 'text-[#8c8577]' : 'text-[#c4c0b8]'
-                  }`}
-                >
-                  {String(hour).padStart(2, '0')}
+                  }`}>
+                    {String(hour).padStart(2, '0')}
+                  </div>
+                  {daysOfWeek.map((day, dayIdx) => {
+                    const cell = renderedCells.find(c => c.id.endsWith(`-${dayIdx}-${hour}`));
+                    return (
+                      <div
+                        key={dayIdx}
+                        onClick={() => openCell(dayIdx, hour)}
+                        className={`col-span-2 border-r last:border-r-0 border-[#eae6d8] min-h-10 cursor-pointer hover:bg-pink-50/50 transition-colors relative group ${day.isToday ? 'bg-pink-50/30' : ''}`}
+                        style={cell ? { backgroundColor: cell.color, borderLeft: `2px solid ${colorPresets.find(cp => cp.bg === cell.color)?.border || '#fbcfe8'}` } : {}}
+                      >
+                        {cell && (
+                          <div className="px-1 py-0.5 text-[10px] leading-snug font-medium text-[#3c3830]">
+                            {cell.text.split('\n').filter(Boolean).map((seg, i) => {
+                              const done = seg.startsWith('[x]');
+                              const label = done ? seg.slice(3) : seg;
+                              return (
+                                <div key={i} className={`break-words ${done ? 'line-through text-gray-400' : ''}`}>{label}</div>
+                              );
+                            })}
+                          </div>
+                        )}
+                        {!cell && (
+                          <span className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-30 text-[10px] text-pink-400 select-none">+</span>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               ))}
-            </div>
 
-            {/* Day columns */}
-            {daysOfWeek.map((day, dayIdx) => (
-              <div
-                key={dayIdx}
-                className={`col-span-2 border-r last:border-r-0 border-[#eae6d8] divide-y divide-[#eae6d8]/60 ${
-                  day.isToday ? 'bg-pink-50/30' : ''
-                }`}
-              >
-                {hours.map(hour => {
-                  const cell = renderedCells.find(c => c.id.endsWith(`-${dayIdx}-${hour}`));
-                  return (
-                    <div
-                      key={hour}
-                      onClick={() => openCell(dayIdx, hour)}
-                      className="min-h-10 cursor-pointer hover:bg-pink-50/50 transition-colors relative group"
-                      style={cell ? { backgroundColor: cell.color, borderLeft: `2px solid ${colorPresets.find(cp => cp.bg === cell.color)?.border || '#fbcfe8'}` } : {}}
+              {/* Add new hour slot */}
+              <div className="px-3 py-2 border-t border-[#eae6d8]">
+                {!showAddPicker ? (
+                  <button
+                    type="button"
+                    onClick={() => setShowAddPicker(true)}
+                    className="text-[10px] text-pink-400 hover:text-pink-600 cursor-pointer flex items-center gap-1"
+                  >
+                    <Plus size={11} /> 新增时段
+                  </button>
+                ) : (
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-[10px] text-gray-500">选择日期和时段：</span>
+                    <select
+                      value={addPickerDay}
+                      onChange={e => setAddPickerDay(Number(e.target.value))}
+                      className="border border-pink-200 rounded px-1.5 py-0.5 text-xs focus:outline-none bg-white"
                     >
-                      {cell && (
-                        <div className="px-1 py-0.5 text-[10px] leading-snug font-medium text-[#3c3830]">
-                          {cell.text.split('\n').filter(Boolean).map((seg, i) => {
-                            const done = seg.startsWith('[x]');
-                            const label = done ? seg.slice(3) : seg;
-                            return (
-                              <div key={i} className={`break-words ${done ? 'line-through text-gray-400' : ''}`}>{label}</div>
-                            );
-                          })}
-                        </div>
-                      )}
-                      {!cell && (
-                        <span className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-30 text-[10px] text-pink-400 select-none">+</span>
-                      )}
-                    </div>
-                  );
-                })}
+                      {daysOfWeek.map((d, i) => (
+                        <option key={i} value={i}>{d.text} {d.dateStr}</option>
+                      ))}
+                    </select>
+                    <select
+                      value={addPickerHour}
+                      onChange={e => setAddPickerHour(Number(e.target.value))}
+                      className="border border-pink-200 rounded px-1.5 py-0.5 text-xs focus:outline-none bg-white"
+                    >
+                      {Array.from({ length: 24 }, (_, i) => (
+                        <option key={i} value={i}>{String(i).padStart(2, '0')}:00</option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      onClick={() => { setShowAddPicker(false); openCell(addPickerDay, addPickerHour); }}
+                      className="text-[10px] font-bold text-white bg-pink-400 hover:bg-pink-500 rounded px-2 py-0.5 cursor-pointer"
+                    >
+                      添加
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowAddPicker(false)}
+                      className="text-[10px] text-gray-400 hover:text-gray-600 cursor-pointer"
+                    >
+                      取消
+                    </button>
+                  </div>
+                )}
               </div>
-            ))}
-          </div>
-        </div>
+            </div>
+          );
+        })()}
 
         {/* Notes row */}
         <div className="border-t-2 border-[#eae6d8] bg-[#fbfaf5]">
