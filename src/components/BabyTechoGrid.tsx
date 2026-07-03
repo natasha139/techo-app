@@ -31,6 +31,38 @@ const colorPresets = [
   { label: '其他', bg: '#fffbeb', border: '#fef3c7', textClass: 'text-amber-900' },
 ];
 
+type BabyDailyNote = {
+  todos: { text: string; done: boolean }[];
+  outdoorMinutes: string;
+  summary: string;
+};
+
+const parseBabyDailyNote = (raw = ''): BabyDailyNote => {
+  const lines = raw.split('\n');
+  const outdoorLine = lines.find(line => line.startsWith('@@outdoorMinutes='));
+  const summaryLine = lines.find(line => line.startsWith('@@summary='));
+  const metaPrefixes = ['@@outdoorMinutes=', '@@summary='];
+  const todos = lines
+    .filter(line => line.trim() && !metaPrefixes.some(prefix => line.startsWith(prefix)))
+    .map(line => ({ done: line.startsWith('[x]'), text: line.startsWith('[x]') ? line.slice(3) : line }));
+  return {
+    todos,
+    outdoorMinutes: outdoorLine ? outdoorLine.replace('@@outdoorMinutes=', '') : '',
+    summary: summaryLine ? summaryLine.replace('@@summary=', '') : '',
+  };
+};
+
+const serializeBabyDailyNote = (note: BabyDailyNote): string => {
+  const todoLines = note.todos
+    .filter(todo => todo.text.trim())
+    .map(todo => `${todo.done ? '[x]' : ''}${todo.text.trim()}`);
+  const metaLines = [
+    note.outdoorMinutes.trim() ? `@@outdoorMinutes=${note.outdoorMinutes.trim()}` : '',
+    note.summary.trim() ? `@@summary=${note.summary.trim()}` : '',
+  ].filter(Boolean);
+  return [...todoLines, ...metaLines].join('\n');
+};
+
 function getCurrentWeekDays(weekOffset = 0) {
   const today = new Date();
   const dayOfWeek = today.getDay();
@@ -89,8 +121,11 @@ function buildPrintHtml(
   }).join('');
 
   const notesCells = days.map((_, idx) => {
-    const note = notes[idx] || '';
-    return `<td style="width:12%;vertical-align:top;padding:4px;border:1px solid #eae6d8;font-size:9px;color:#524c3e;white-space:pre-wrap;">${note}</td>`;
+    const note = parseBabyDailyNote(notes[idx] || '');
+    const todos = note.todos.map(todo => `${todo.done ? '✓ ' : '□ '}${todo.text}`).join('<br>');
+    const outdoor = note.outdoorMinutes ? `<br><strong>户外：</strong>${note.outdoorMinutes}分钟` : '';
+    const summary = note.summary ? `<br><strong>总结：</strong>${note.summary}` : '';
+    return `<td style="width:12%;vertical-align:top;padding:4px;border:1px solid #eae6d8;font-size:9px;color:#524c3e;">${todos}${outdoor}${summary}</td>`;
   }).join('');
 
   return `<!DOCTYPE html>
@@ -207,8 +242,51 @@ export default function BabyTechoGrid({
     setEditItems([{ text: '', done: false }]);
   };
 
-  const [editingNoteDay, setEditingNoteDay] = useState<number | null>(null);
-  const [noteText, setNoteText] = useState('');
+  const [editingDailyNotes, setEditingDailyNotes] = useState<{ [dayIdx: number]: BabyDailyNote }>({});
+
+  const openDayNoteEditor = (idx: number) => {
+    if (editingDailyNotes[idx]) return;
+    const parsed = parseBabyDailyNote(renderedNotes[idx] || '');
+    if (!parsed.todos.length) parsed.todos = [{ text: '', done: false }];
+    setEditingDailyNotes(prev => ({ ...prev, [idx]: parsed }));
+  };
+
+  const saveDayNote = (idx: number) => {
+    const note = editingDailyNotes[idx];
+    if (!note) return;
+    const serialized = serializeBabyDailyNote(note);
+    onSaveTodayNote(idx, serialized);
+    setEditingDailyNotes(prev => { const n = { ...prev }; delete n[idx]; return n; });
+  };
+
+  const updateDayNoteTodo = (dayIdx: number, todoIdx: number, field: 'text' | 'done', value: string | boolean) => {
+    setEditingDailyNotes(prev => {
+      const note = { ...prev[dayIdx] };
+      const todos = note.todos.map((t, i) => i === todoIdx ? { ...t, [field]: value } : t);
+      return { ...prev, [dayIdx]: { ...note, todos } };
+    });
+  };
+
+  const addDayNoteTodo = (dayIdx: number) => {
+    setEditingDailyNotes(prev => {
+      const note = { ...prev[dayIdx] };
+      return { ...prev, [dayIdx]: { ...note, todos: [...note.todos, { text: '', done: false }] } };
+    });
+  };
+
+  const removeDayNoteTodo = (dayIdx: number, todoIdx: number) => {
+    setEditingDailyNotes(prev => {
+      const note = { ...prev[dayIdx] };
+      const todos = note.todos.filter((_, i) => i !== todoIdx);
+      return { ...prev, [dayIdx]: { ...note, todos: todos.length ? todos : [{ text: '', done: false }] } };
+    });
+  };
+
+  const toggleDayNoteTodoDirect = (idx: number, todoIdx: number) => {
+    const parsed = parseBabyDailyNote(renderedNotes[idx] || '');
+    const todos = parsed.todos.map((t, i) => i === todoIdx ? { ...t, done: !t.done } : t);
+    onSaveTodayNote(idx, serializeBabyDailyNote({ ...parsed, todos }));
+  };
 
   // Goals state
   const [goalScope, setGoalScope] = useState<'week' | 'month'>('week');
@@ -230,17 +308,6 @@ export default function BabyTechoGrid({
   };
   const toggleGoal = (id: string) => onToggleChildGoal?.(id);
   const deleteGoal = (id: string) => onDeleteChildGoal?.(id);
-
-  const startEditNote = (idx: number) => {
-    setNoteText(renderedNotes[idx] || '');
-    setEditingNoteDay(idx);
-  };
-
-  const saveNote = () => {
-    if (editingNoteDay === null) return;
-    onSaveTodayNote(editingNoteDay, noteText);
-    setEditingNoteDay(null);
-  };
 
   const handlePrint = () => {
     const el = document.getElementById('baby-print-target');
@@ -481,43 +548,126 @@ export default function BabyTechoGrid({
           );
         })()}
 
-        {/* Notes row */}
+        {/* Daily notes section */}
         <div className="border-t-2 border-[#eae6d8] bg-[#fbfaf5]">
+          {/* Section header */}
           <div className="grid grid-cols-15 border-b border-[#eae6d8] bg-[#fdf6f0]">
-            <div className="col-span-1 border-r border-[#eae6d8] py-1 text-[10px] text-center font-bold text-[#8c8577] flex items-center justify-center">备注</div>
+            <div className="col-span-1 border-r border-[#eae6d8] py-1 text-[10px] text-center font-bold text-[#8c8577] flex items-center justify-center">每日</div>
             <div className="col-span-14 py-1 px-3 text-[10px] font-semibold text-[#c06080]/70 tracking-wider">
-              🌱 {childName}每日备注
+              ✅ 每日 To Do
             </div>
           </div>
-          <div className="grid grid-cols-15 divide-x divide-[#eae6d8]">
-            <div className="col-span-1 bg-[#fdfdfb] flex items-center justify-center text-base">🌸</div>
+          {/* To Do row */}
+          <div className="grid grid-cols-15 divide-x divide-[#eae6d8] border-b border-[#eae6d8]">
+            <div className="col-span-1 bg-[#fdfdfb] flex items-center justify-center text-base">📋</div>
             {daysOfWeek.map((day, idx) => {
-              const noteVal = renderedNotes[idx] || '';
-              const isEditing = editingNoteDay === idx;
+              const editing = editingDailyNotes[idx];
+              const parsed = parseBabyDailyNote(renderedNotes[idx] || '');
               return (
-                <div
-                  key={idx}
-                  onClick={() => !isEditing && startEditNote(idx)}
-                  className={`col-span-2 p-2 min-h-[68px] relative text-[11px] leading-relaxed cursor-pointer transition-all ${
-                    day.isToday ? 'bg-pink-50/40' : 'bg-white'
-                  } hover:bg-pink-50/30`}
-                >
-                  {isEditing ? (
-                    <div className="flex flex-col gap-1" onClick={e => e.stopPropagation()}>
-                      <textarea
-                        value={noteText}
-                        onChange={e => setNoteText(e.target.value)}
-                        className="w-full text-xs p-1 bg-white border border-pink-200 rounded focus:outline-none focus:ring-1 focus:ring-pink-300 resize-none h-[50px] font-sans"
-                        placeholder="今日备注..."
-                        autoFocus
-                      />
-                      <div className="flex justify-between">
-                        <button onClick={() => setEditingNoteDay(null)} className="text-[9px] px-1 py-0.5 text-gray-500 hover:bg-gray-100 rounded border cursor-pointer">取消</button>
-                        <button onClick={saveNote} className="text-[9px] px-1.5 py-0.5 bg-[#c06080] text-white rounded hover:bg-[#a04060] cursor-pointer">保存</button>
+                <div key={idx} className={`col-span-2 p-1.5 min-h-[72px] text-[10px] ${day.isToday ? 'bg-pink-50/40' : 'bg-white'}`}>
+                  {editing ? (
+                    <div className="flex flex-col gap-1">
+                      {editing.todos.map((todo, ti) => (
+                        <div key={ti} className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => updateDayNoteTodo(idx, ti, 'done', !todo.done)}
+                            className={`w-3 h-3 shrink-0 rounded border flex items-center justify-center cursor-pointer transition-colors ${todo.done ? 'bg-pink-400 border-pink-400 text-white' : 'border-pink-300'}`}
+                          >
+                            {todo.done && <Check size={7} />}
+                          </button>
+                          <input
+                            value={todo.text}
+                            onChange={e => updateDayNoteTodo(idx, ti, 'text', e.target.value)}
+                            placeholder="待办..."
+                            className={`flex-1 min-w-0 border border-pink-100 rounded px-1 py-0.5 text-[10px] focus:outline-none bg-white ${todo.done ? 'line-through text-gray-400' : ''}`}
+                          />
+                          {editing.todos.length > 1 && (
+                            <button type="button" onClick={() => removeDayNoteTodo(idx, ti)} className="text-gray-300 hover:text-red-400 cursor-pointer shrink-0">
+                              <X size={9} />
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                      <div className="flex items-center justify-between mt-0.5">
+                        <button type="button" onClick={() => addDayNoteTodo(idx)} className="text-[9px] text-pink-400 hover:text-pink-600 cursor-pointer flex items-center gap-0.5">
+                          <Plus size={8} />
+                        </button>
+                        <div className="flex gap-1">
+                          <button onClick={() => setEditingDailyNotes(prev => { const n = { ...prev }; delete n[idx]; return n; })} className="text-[9px] px-1 py-0.5 text-gray-400 hover:bg-gray-100 rounded border cursor-pointer">取消</button>
+                          <button onClick={() => saveDayNote(idx)} className="text-[9px] px-1.5 py-0.5 bg-[#c06080] text-white rounded hover:bg-[#a04060] cursor-pointer">存</button>
+                        </div>
                       </div>
                     </div>
                   ) : (
-                    <p className="text-[10px] text-[#524c3e] whitespace-pre-wrap">{noteVal}</p>
+                    <div className="flex flex-col gap-0.5 cursor-pointer" onClick={() => openDayNoteEditor(idx)}>
+                      {parsed.todos.length === 0 ? (
+                        <span className="text-[9px] text-gray-300">点击添加</span>
+                      ) : parsed.todos.map((todo, ti) => (
+                        <div key={ti} className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={e => { e.stopPropagation(); toggleDayNoteTodoDirect(idx, ti); }}
+                            className={`w-3 h-3 shrink-0 rounded border flex items-center justify-center cursor-pointer transition-colors ${todo.done ? 'bg-pink-400 border-pink-400 text-white' : 'border-pink-300'}`}
+                          >
+                            {todo.done && <Check size={7} />}
+                          </button>
+                          <span className={`text-[10px] leading-tight ${todo.done ? 'line-through text-gray-400' : 'text-[#3c3830]'}`}>{todo.text}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+          {/* Outdoor + summary row */}
+          <div className="grid grid-cols-15 border-b border-[#eae6d8] bg-[#fdf6f0]">
+            <div className="col-span-1 border-r border-[#eae6d8] py-1 text-[10px] text-center font-bold text-[#8c8577] flex items-center justify-center">总结</div>
+            <div className="col-span-14 py-1 px-3 text-[10px] font-semibold text-[#c06080]/70 tracking-wider">
+              🌿 户外时长 &amp; 今日总结
+            </div>
+          </div>
+          <div className="grid grid-cols-15 divide-x divide-[#eae6d8]">
+            <div className="col-span-1 bg-[#fdfdfb] flex items-center justify-center text-base">🌞</div>
+            {daysOfWeek.map((day, idx) => {
+              const editing = editingDailyNotes[idx];
+              const parsed = parseBabyDailyNote(renderedNotes[idx] || '');
+              return (
+                <div key={idx} className={`col-span-2 p-1.5 min-h-[52px] text-[10px] ${day.isToday ? 'bg-pink-50/40' : 'bg-white'}`}>
+                  {editing ? (
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center gap-1">
+                        <input
+                          type="number"
+                          min="0"
+                          value={editing.outdoorMinutes}
+                          onChange={e => setEditingDailyNotes(prev => ({ ...prev, [idx]: { ...prev[idx], outdoorMinutes: e.target.value } }))}
+                          placeholder="0"
+                          className="w-10 border border-green-200 rounded px-1 py-0.5 text-[10px] focus:outline-none bg-white text-center"
+                        />
+                        <span className="text-[9px] text-gray-400">分钟</span>
+                      </div>
+                      <input
+                        value={editing.summary}
+                        onChange={e => setEditingDailyNotes(prev => ({ ...prev, [idx]: { ...prev[idx], summary: e.target.value } }))}
+                        placeholder="今日总结..."
+                        className="w-full border border-pink-100 rounded px-1 py-0.5 text-[10px] focus:outline-none bg-white"
+                      />
+                    </div>
+                  ) : (
+                    <div className="flex flex-col gap-0.5 cursor-pointer" onClick={() => openDayNoteEditor(idx)}>
+                      {parsed.outdoorMinutes ? (
+                        <span className="text-[10px] text-green-700 font-semibold">🌿 {parsed.outdoorMinutes}min</span>
+                      ) : (
+                        <span className="text-[9px] text-gray-300">户外—</span>
+                      )}
+                      {parsed.summary ? (
+                        <span className="text-[10px] text-[#524c3e] leading-snug">{parsed.summary}</span>
+                      ) : (
+                        <span className="text-[9px] text-gray-300">总结—</span>
+                      )}
+                    </div>
                   )}
                 </div>
               );
