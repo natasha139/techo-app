@@ -516,41 +516,63 @@ export default function BabyTechoGrid({
               {activeHours.length === 0 && (
                 <div className="py-8 text-center text-[11px] text-gray-400">还没有计划，点下方「+ 新增时段」开始添加</div>
               )}
-              {activeHours.map(hour => (
-                <div key={hour} className="grid grid-cols-15 border-b border-[#eae6d8]/60">
-                  <div className={`col-span-1 border-r border-[#eae6d8] flex items-center justify-center text-[9px] font-mono font-bold select-none py-1 ${
-                    hour >= 6 && hour <= 21 ? 'text-[#8c8577]' : 'text-[#c4c0b8]'
-                  }`}>
-                    {String(hour).padStart(2, '0')}
-                  </div>
-                  {daysOfWeek.map((day, dayIdx) => {
-                    const cell = renderedCells.find(c => c.id.endsWith(`-${dayIdx}-${hour}`));
-                    return (
-                      <div
-                        key={dayIdx}
-                        onClick={() => openCell(dayIdx, hour)}
-                        className={`col-span-2 border-r last:border-r-0 border-[#eae6d8] min-h-10 cursor-pointer hover:bg-pink-50/50 transition-colors relative group ${day.isToday ? 'bg-pink-50/30' : ''}`}
-                        style={cell ? { backgroundColor: cell.color, borderLeft: `2px solid ${colorPresets.find(cp => cp.bg === cell.color)?.border || '#fbcfe8'}` } : {}}
-                      >
-                        {cell && (
-                          <div className="px-1 py-0.5 text-[10px] leading-snug font-medium text-[#3c3830]">
-                            {cell.text.split('\n').filter(Boolean).map((seg, i) => {
-                              const done = seg.startsWith('[x]');
-                              const label = done ? seg.slice(3) : seg;
-                              return (
-                                <div key={i} className={`break-words ${done ? 'line-through text-gray-400' : ''}`}>{label}</div>
-                              );
-                            })}
+              {(() => {
+                const SECTION_DIVIDERS = [
+                  { threshold: 9,  label: '早', bg: '#fffbeb', text: '#b45309', line: '#fcd34d' },
+                  { threshold: 14, label: '中', bg: '#f0fdf4', text: '#15803d', line: '#86efac' },
+                  { threshold: 20, label: '晚', bg: '#f5f3ff', text: '#7c3aed', line: '#c4b5fd' },
+                ];
+                const usedDivs = new Set<number>();
+                return activeHours.map(hour => {
+                  const divsBefore = SECTION_DIVIDERS.filter(d => !usedDivs.has(d.threshold) && hour >= d.threshold);
+                  divsBefore.forEach(d => usedDivs.add(d.threshold));
+                  return (
+                    <React.Fragment key={hour}>
+                      {divsBefore.map(d => (
+                        <div key={`sec-${d.threshold}`} className="grid grid-cols-15" style={{ background: d.bg, borderTop: `1.5px solid ${d.line}`, borderBottom: `1.5px solid ${d.line}` }}>
+                          <div className="col-span-1 flex items-center justify-center py-0.5 border-r border-[#eae6d8]" style={{ color: d.text }}>
+                            <span className="text-[9px] font-extrabold tracking-widest">{d.label}</span>
                           </div>
-                        )}
-                        {!cell && (
-                          <span className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-30 text-[10px] text-pink-400 select-none">+</span>
-                        )}
+                          <div className="col-span-14" />
+                        </div>
+                      ))}
+                      <div className="grid grid-cols-15 border-b border-[#eae6d8]/60">
+                        <div className={`col-span-1 border-r border-[#eae6d8] flex items-center justify-center text-[9px] font-mono font-bold select-none py-1 ${
+                          hour >= 6 && hour <= 21 ? 'text-[#8c8577]' : 'text-[#c4c0b8]'
+                        }`}>
+                          {String(hour).padStart(2, '0')}
+                        </div>
+                        {daysOfWeek.map((day, dayIdx) => {
+                          const cell = renderedCells.find(c => c.id.endsWith(`-${dayIdx}-${hour}`));
+                          return (
+                            <div
+                              key={dayIdx}
+                              onClick={() => openCell(dayIdx, hour)}
+                              className={`col-span-2 border-r last:border-r-0 border-[#eae6d8] min-h-10 cursor-pointer hover:bg-pink-50/50 transition-colors relative group ${day.isToday ? 'bg-pink-50/30' : ''}`}
+                              style={cell ? { backgroundColor: cell.color, borderLeft: `2px solid ${colorPresets.find(cp => cp.bg === cell.color)?.border || '#fbcfe8'}` } : {}}
+                            >
+                              {cell && (
+                                <div className="px-1 py-0.5 text-[10px] leading-snug font-medium text-[#3c3830]">
+                                  {cell.text.split('\n').filter(Boolean).map((seg, i) => {
+                                    const done = seg.startsWith('[x]');
+                                    const label = done ? seg.slice(3) : seg;
+                                    return (
+                                      <div key={i} className={`break-words ${done ? 'line-through text-gray-400' : ''}`}>{label}</div>
+                                    );
+                                  })}
+                                </div>
+                              )}
+                              {!cell && (
+                                <span className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-30 text-[10px] text-pink-400 select-none">+</span>
+                              )}
+                            </div>
+                          );
+                        })}
                       </div>
-                    );
-                  })}
-                </div>
-              ))}
+                    </React.Fragment>
+                  );
+                });
+              })()}
 
               {/* Add new hour slot */}
               <div className="px-3 py-2 border-t border-[#eae6d8]">
