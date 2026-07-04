@@ -245,6 +245,18 @@ export default function BabyTechoGrid({
   const [addPickerDay, setAddPickerDay] = useState(0);
   const [addPickerHour, setAddPickerHour] = useState(8);
 
+  const [cellFontSize, setCellFontSize] = useState<number>(() => {
+    const saved = localStorage.getItem('babygrid-fontsize');
+    return saved ? parseInt(saved) : 10;
+  });
+  const adjustFontSize = (delta: number) => {
+    setCellFontSize(prev => {
+      const next = Math.min(16, Math.max(8, prev + delta));
+      localStorage.setItem('babygrid-fontsize', String(next));
+      return next;
+    });
+  };
+
   const openCell = (dayIdx: number, hour: number) => {
     const existing = renderedCells.find(c => c.id.endsWith(`-${dayIdx}-${hour}`));
     const items = existing?.text
@@ -395,13 +407,20 @@ export default function BabyTechoGrid({
             <span className="ml-2 text-[10px] text-[#c06080]/70 font-mono">{monthStr}</span>
           </div>
         </div>
-        <button
-          onClick={handlePrint}
-          className="no-print flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-white border border-pink-200 text-[#c06080] rounded hover:bg-pink-50 cursor-pointer transition-colors"
-        >
-          <Printer size={13} />
-          打印 / 导出 PDF
-        </button>
+        <div className="no-print flex items-center gap-2">
+          <div className="flex items-center gap-1 bg-white border border-pink-200 rounded px-1.5 py-1">
+            <button onClick={() => adjustFontSize(-1)} className="w-5 h-5 flex items-center justify-center text-[#c06080] hover:bg-pink-50 rounded cursor-pointer font-bold text-sm leading-none">−</button>
+            <span className="text-[10px] text-[#c06080]/60 font-mono w-5 text-center">{cellFontSize}</span>
+            <button onClick={() => adjustFontSize(1)} className="w-5 h-5 flex items-center justify-center text-[#c06080] hover:bg-pink-50 rounded cursor-pointer font-bold text-sm leading-none">+</button>
+          </div>
+          <button
+            onClick={handlePrint}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-white border border-pink-200 text-[#c06080] rounded hover:bg-pink-50 cursor-pointer transition-colors"
+          >
+            <Printer size={13} />
+            打印 / 导出 PDF
+          </button>
+        </div>
       </div>
 
       {/* Goals Panel */}
@@ -557,7 +576,7 @@ export default function BabyTechoGrid({
                                           {todo.done && <Check size={6} />}
                                         </button>
                                         <input value={todo.text} onChange={e => setEditingSectionSlot(prev => prev ? { ...prev, items: prev.items.map((t, i) => i === ti ? { ...t, text: e.target.value } : t) } : null)}
-                                          className="flex-1 min-w-0 border border-pink-100 rounded px-0.5 text-[9px] focus:outline-none bg-white" />
+                                          className="flex-1 min-w-0 border border-pink-100 rounded px-0.5 focus:outline-none bg-white" style={{ fontSize: cellFontSize }} />
                                         {editingSectionSlot!.items.length > 1 && (
                                           <button onClick={() => setEditingSectionSlot(prev => prev ? { ...prev, items: prev.items.filter((_, i) => i !== ti) } : null)}
                                             className="text-gray-300 hover:text-red-400 cursor-pointer"><X size={7} /></button>
@@ -584,7 +603,7 @@ export default function BabyTechoGrid({
                                           className={`w-2.5 h-2.5 shrink-0 rounded border flex items-center justify-center cursor-pointer ${todo.done ? 'bg-pink-400 border-pink-400 text-white' : 'border-pink-300'}`}>
                                           {todo.done && <Check size={6} />}
                                         </button>
-                                        <span className={`text-[9px] leading-tight break-words ${todo.done ? 'line-through text-gray-400' : ''}`}>{todo.text}</span>
+                                        <span className={`leading-tight break-words ${todo.done ? 'line-through text-gray-400' : ''}`} style={{ fontSize: cellFontSize }}>{todo.text}</span>
                                       </div>
                                     ))}
                                   </div>
@@ -610,7 +629,7 @@ export default function BabyTechoGrid({
                               style={cell ? { backgroundColor: cell.color, borderLeft: `2px solid ${colorPresets.find(cp => cp.bg === cell.color)?.border || '#fbcfe8'}` } : {}}
                             >
                               {cell && (
-                                <div className="px-1 py-0.5 text-[10px] leading-snug font-medium text-[#3c3830]">
+                                <div className="px-1 py-0.5 leading-snug font-medium text-[#3c3830]" style={{ fontSize: cellFontSize }}>
                                   {cell.text.split('\n').filter(Boolean).map((seg, i) => {
                                     const done = seg.startsWith('[x]');
                                     const label = done ? seg.slice(3) : seg;
