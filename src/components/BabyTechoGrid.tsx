@@ -32,36 +32,53 @@ const colorPresets = [
   { label: '其他', bg: '#fffbeb', border: '#fcd34d', textClass: 'text-amber-900' },
 ];
 
+type TodoItem = { text: string; done: boolean };
 type BabyDailyNote = {
-  todos: { text: string; done: boolean }[];
+  morning: TodoItem[];
+  noon: TodoItem[];
+  evening: TodoItem[];
   outdoorMinutes: string;
   summary: string;
 };
+const SECTIONS = [
+  { key: 'morning' as const, label: '早' },
+  { key: 'noon' as const, label: '中' },
+  { key: 'evening' as const, label: '晚' },
+];
 
 const parseBabyDailyNote = (raw = ''): BabyDailyNote => {
   const lines = raw.split('\n');
-  const outdoorLine = lines.find(line => line.startsWith('@@outdoorMinutes='));
-  const summaryLine = lines.find(line => line.startsWith('@@summary='));
-  const metaPrefixes = ['@@outdoorMinutes=', '@@summary='];
-  const todos = lines
-    .filter(line => line.trim() && !metaPrefixes.some(prefix => line.startsWith(prefix)))
-    .map(line => ({ done: line.startsWith('[x]'), text: line.startsWith('[x]') ? line.slice(3) : line }));
+  const outdoorLine = lines.find(l => l.startsWith('@@outdoorMinutes='));
+  const summaryLine = lines.find(l => l.startsWith('@@summary='));
+  const morning: TodoItem[] = [], noon: TodoItem[] = [], evening: TodoItem[] = [];
+  let cur: 'morning' | 'noon' | 'evening' = 'morning';
+  let hasSections = false;
+  for (const line of lines) {
+    if (!line.trim()) continue;
+    if (line.startsWith('@@section=')) { cur = (line.slice(10) as any) || 'morning'; hasSections = true; continue; }
+    if (line.startsWith('@@')) continue;
+    const item: TodoItem = { done: line.startsWith('[x]'), text: line.startsWith('[x]') ? line.slice(3) : line };
+    if (cur === 'noon') noon.push(item);
+    else if (cur === 'evening') evening.push(item);
+    else morning.push(item);
+  }
   return {
-    todos,
+    morning, noon, evening,
     outdoorMinutes: outdoorLine ? outdoorLine.replace('@@outdoorMinutes=', '') : '',
     summary: summaryLine ? summaryLine.replace('@@summary=', '') : '',
   };
 };
 
 const serializeBabyDailyNote = (note: BabyDailyNote): string => {
-  const todoLines = note.todos
-    .filter(todo => todo.text.trim())
-    .map(todo => `${todo.done ? '[x]' : ''}${todo.text.trim()}`);
-  const metaLines = [
-    note.outdoorMinutes.trim() ? `@@outdoorMinutes=${note.outdoorMinutes.trim()}` : '',
-    note.summary.trim() ? `@@summary=${note.summary.trim()}` : '',
-  ].filter(Boolean);
-  return [...todoLines, ...metaLines].join('\n');
+  const toLines = (items: TodoItem[]) => items.filter(t => t.text.trim()).map(t => `${t.done ? '[x]' : ''}${t.text.trim()}`);
+  const parts: string[] = [];
+  const mLines = toLines(note.morning), nLines = toLines(note.noon), eLines = toLines(note.evening);
+  if (mLines.length) parts.push('@@section=morning', ...mLines);
+  if (nLines.length) parts.push('@@section=noon', ...nLines);
+  if (eLines.length) parts.push('@@section=evening', ...eLines);
+  if (note.outdoorMinutes.trim()) parts.push(`@@outdoorMinutes=${note.outdoorMinutes.trim()}`);
+  if (note.summary.trim()) parts.push(`@@summary=${note.summary.trim()}`);
+  return parts.join('\n');
 };
 
 function getWeekKey(weekOffset = 0): string {
@@ -131,7 +148,10 @@ function buildPrintHtml(
 
   const notesCells = days.map((_, idx) => {
     const note = parseBabyDailyNote(notes[idx] || '');
-    const todos = note.todos.map(todo => `${todo.done ? '✓ ' : '□ '}${todo.text}`).join('<br>');
+    const secHtml = (label: string, items: TodoItem[]) => items.length === 0 ? '' :
+      `<div style="font-size:8px;color:#c06080;font-weight:700;margin-top:2px;">${label}</div>` +
+      items.map(t => `<div>${t.done ? '✓ ' : '□ '}${t.text}</div>`).join('');
+    const todos = [secHtml('早', note.morning), secHtml('中', note.noon), secHtml('晚', note.evening)].filter(Boolean).join('');
     const outdoor = note.outdoorMinutes ? `<br><strong>户外：</strong>${note.outdoorMinutes}分钟` : '';
     const summary = note.summary ? `<br><strong>总结：</strong>${note.summary}` : '';
     return `<td style="width:12%;vertical-align:top;padding:4px;border:1px solid #eae6d8;font-size:9px;color:#524c3e;">${todos}${outdoor}${summary}</td>`;
@@ -253,22 +273,25 @@ export default function BabyTechoGrid({
     setEditItems([{ text: '', done: false }]);
   };
 
-  const [editingDailyNotes, setEditingDailyNotes] = useState<{ [dayIdx: number]: { todos: { text: string; done: boolean }[] } }>({});
+  type EditingNote = { morning: TodoItem[]; noon: TodoItem[]; evening: TodoItem[] };
+  const [editingDailyNotes, setEditingDailyNotes] = useState<{ [dayIdx: number]: EditingNote }>({});
   const [editingSummary, setEditingSummary] = useState<{ [dayIdx: number]: { outdoorMinutes: string; summary: string } }>({});
 
   const openDayNoteEditor = (idx: number) => {
     if (editingDailyNotes[idx]) return;
-    const parsed = parseBabyDailyNote(renderedNotes[idx] || '');
-    const todos = parsed.todos.length ? parsed.todos : [{ text: '', done: false }];
-    setEditingDailyNotes(prev => ({ ...prev, [idx]: { todos } }));
+    const p = parseBabyDailyNote(renderedNotes[idx] || '');
+    setEditingDailyNotes(prev => ({ ...prev, [idx]: {
+      morning: p.morning.length ? p.morning : [{ text: '', done: false }],
+      noon: p.noon.length ? p.noon : [{ text: '', done: false }],
+      evening: p.evening.length ? p.evening : [{ text: '', done: false }],
+    }}));
   };
 
   const saveDayNote = (idx: number) => {
     const editing = editingDailyNotes[idx];
     if (!editing) return;
     const existing = parseBabyDailyNote(renderedNotes[idx] || '');
-    const serialized = serializeBabyDailyNote({ todos: editing.todos, outdoorMinutes: existing.outdoorMinutes, summary: existing.summary });
-    onSaveTodayNote(idx, serialized);
+    onSaveTodayNote(idx, serializeBabyDailyNote({ ...editing, outdoorMinutes: existing.outdoorMinutes, summary: existing.summary }));
     setEditingDailyNotes(prev => { const n = { ...prev }; delete n[idx]; return n; });
   };
 
@@ -287,33 +310,31 @@ export default function BabyTechoGrid({
     setEditingSummary(prev => { const n = { ...prev }; delete n[idx]; return n; });
   };
 
-  const updateDayNoteTodo = (dayIdx: number, todoIdx: number, field: 'text' | 'done', value: string | boolean) => {
+  const updateDayNoteTodo = (dayIdx: number, sec: 'morning'|'noon'|'evening', todoIdx: number, field: 'text'|'done', value: string|boolean) => {
     setEditingDailyNotes(prev => {
       const note = { ...prev[dayIdx] };
-      const todos = note.todos.map((t, i) => i === todoIdx ? { ...t, [field]: value } : t);
-      return { ...prev, [dayIdx]: { ...note, todos } };
+      return { ...prev, [dayIdx]: { ...note, [sec]: note[sec].map((t, i) => i === todoIdx ? { ...t, [field]: value } : t) } };
     });
   };
 
-  const addDayNoteTodo = (dayIdx: number) => {
+  const addDayNoteTodo = (dayIdx: number, sec: 'morning'|'noon'|'evening') => {
     setEditingDailyNotes(prev => {
       const note = { ...prev[dayIdx] };
-      return { ...prev, [dayIdx]: { ...note, todos: [...note.todos, { text: '', done: false }] } };
+      return { ...prev, [dayIdx]: { ...note, [sec]: [...note[sec], { text: '', done: false }] } };
     });
   };
 
-  const removeDayNoteTodo = (dayIdx: number, todoIdx: number) => {
+  const removeDayNoteTodo = (dayIdx: number, sec: 'morning'|'noon'|'evening', todoIdx: number) => {
     setEditingDailyNotes(prev => {
       const note = { ...prev[dayIdx] };
-      const todos = note.todos.filter((_, i) => i !== todoIdx);
-      return { ...prev, [dayIdx]: { ...note, todos: todos.length ? todos : [{ text: '', done: false }] } };
+      const items = note[sec].filter((_, i) => i !== todoIdx);
+      return { ...prev, [dayIdx]: { ...note, [sec]: items.length ? items : [{ text: '', done: false }] } };
     });
   };
 
-  const toggleDayNoteTodoDirect = (idx: number, todoIdx: number) => {
+  const toggleDayNoteTodoDirect = (idx: number, sec: 'morning'|'noon'|'evening', todoIdx: number) => {
     const parsed = parseBabyDailyNote(renderedNotes[idx] || '');
-    const todos = parsed.todos.map((t, i) => i === todoIdx ? { ...t, done: !t.done } : t);
-    onSaveTodayNote(idx, serializeBabyDailyNote({ ...parsed, todos }));
+    onSaveTodayNote(idx, serializeBabyDailyNote({ ...parsed, [sec]: parsed[sec].map((t, i) => i === todoIdx ? { ...t, done: !t.done } : t) }));
   };
 
   // Goals state
@@ -601,53 +622,48 @@ export default function BabyTechoGrid({
               return (
                 <div key={idx} className={`col-span-2 p-1.5 min-h-[72px] text-[10px] ${day.isToday ? 'bg-pink-50/40' : 'bg-white'}`}>
                   {editing ? (
-                    <div className="flex flex-col gap-1">
-                      {editing.todos.map((todo, ti) => (
-                        <div key={ti} className="flex items-center gap-1">
-                          <button
-                            type="button"
-                            onClick={() => updateDayNoteTodo(idx, ti, 'done', !todo.done)}
-                            className={`w-3 h-3 shrink-0 rounded border flex items-center justify-center cursor-pointer transition-colors ${todo.done ? 'bg-pink-400 border-pink-400 text-white' : 'border-pink-300'}`}
-                          >
-                            {todo.done && <Check size={7} />}
-                          </button>
-                          <input
-                            value={todo.text}
-                            onChange={e => updateDayNoteTodo(idx, ti, 'text', e.target.value)}
-                            placeholder="待办..."
-                            className={`flex-1 min-w-0 border border-pink-100 rounded px-1 py-0.5 text-[10px] focus:outline-none bg-white ${todo.done ? 'line-through text-gray-400' : ''}`}
-                          />
-                          {editing.todos.length > 1 && (
-                            <button type="button" onClick={() => removeDayNoteTodo(idx, ti)} className="text-gray-300 hover:text-red-400 cursor-pointer shrink-0">
-                              <X size={9} />
-                            </button>
-                          )}
+                    <div className="flex flex-col gap-1.5">
+                      {SECTIONS.map(({ key, label }) => (
+                        <div key={key}>
+                          <div className="text-[9px] text-[#c06080]/60 font-bold mb-0.5">{label}</div>
+                          {editing[key].map((todo, ti) => (
+                            <div key={ti} className="flex items-center gap-1 mb-0.5">
+                              <button type="button" onClick={() => updateDayNoteTodo(idx, key, ti, 'done', !todo.done)}
+                                className={`w-3 h-3 shrink-0 rounded border flex items-center justify-center cursor-pointer transition-colors ${todo.done ? 'bg-pink-400 border-pink-400 text-white' : 'border-pink-300'}`}>
+                                {todo.done && <Check size={7} />}
+                              </button>
+                              <input value={todo.text} onChange={e => updateDayNoteTodo(idx, key, ti, 'text', e.target.value)}
+                                placeholder="待办..." className={`flex-1 min-w-0 border border-pink-100 rounded px-1 py-0.5 text-[10px] focus:outline-none bg-white ${todo.done ? 'line-through text-gray-400' : ''}`} />
+                              {editing[key].length > 1 && (
+                                <button type="button" onClick={() => removeDayNoteTodo(idx, key, ti)} className="text-gray-300 hover:text-red-400 cursor-pointer shrink-0"><X size={9} /></button>
+                              )}
+                            </div>
+                          ))}
+                          <button type="button" onClick={() => addDayNoteTodo(idx, key)} className="text-[9px] text-pink-400 hover:text-pink-600 cursor-pointer flex items-center gap-0.5"><Plus size={8} /></button>
                         </div>
                       ))}
-                      <div className="flex items-center justify-between mt-0.5">
-                        <button type="button" onClick={() => addDayNoteTodo(idx)} className="text-[9px] text-pink-400 hover:text-pink-600 cursor-pointer flex items-center gap-0.5">
-                          <Plus size={8} />
-                        </button>
-                        <div className="flex gap-1">
-                          <button onClick={() => setEditingDailyNotes(prev => { const n = { ...prev }; delete n[idx]; return n; })} className="text-[9px] px-1 py-0.5 text-gray-400 hover:bg-gray-100 rounded border cursor-pointer">取消</button>
-                          <button onClick={() => saveDayNote(idx)} className="text-[9px] px-1.5 py-0.5 bg-[#c06080] text-white rounded hover:bg-[#a04060] cursor-pointer">存</button>
-                        </div>
+                      <div className="flex justify-end gap-1 mt-0.5">
+                        <button onClick={() => setEditingDailyNotes(prev => { const n = { ...prev }; delete n[idx]; return n; })} className="text-[9px] px-1 py-0.5 text-gray-400 hover:bg-gray-100 rounded border cursor-pointer">取消</button>
+                        <button onClick={() => saveDayNote(idx)} className="text-[9px] px-1.5 py-0.5 bg-[#c06080] text-white rounded hover:bg-[#a04060] cursor-pointer">存</button>
                       </div>
                     </div>
                   ) : (
-                    <div className="flex flex-col gap-0.5 cursor-pointer" onClick={() => openDayNoteEditor(idx)}>
-                      {parsed.todos.length === 0 ? (
+                    <div className="flex flex-col gap-1 cursor-pointer" onClick={() => openDayNoteEditor(idx)}>
+                      {SECTIONS.every(({ key }) => parsed[key].length === 0) ? (
                         <span className="text-[9px] text-gray-300">点击添加</span>
-                      ) : parsed.todos.map((todo, ti) => (
-                        <div key={ti} className="flex items-center gap-1">
-                          <button
-                            type="button"
-                            onClick={e => { e.stopPropagation(); toggleDayNoteTodoDirect(idx, ti); }}
-                            className={`w-3 h-3 shrink-0 rounded border flex items-center justify-center cursor-pointer transition-colors ${todo.done ? 'bg-pink-400 border-pink-400 text-white' : 'border-pink-300'}`}
-                          >
-                            {todo.done && <Check size={7} />}
-                          </button>
-                          <span className={`text-[10px] leading-tight ${todo.done ? 'line-through text-gray-400' : 'text-[#3c3830]'}`}>{todo.text}</span>
+                      ) : SECTIONS.map(({ key, label }) => parsed[key].length === 0 ? null : (
+                        <div key={key}>
+                          <div className="text-[8px] text-[#c06080]/50 font-bold leading-tight mb-0.5">{label}</div>
+                          {parsed[key].map((todo, ti) => (
+                            <div key={ti} className="flex items-center gap-1 mb-0.5">
+                              <button type="button"
+                                onClick={e => { e.stopPropagation(); toggleDayNoteTodoDirect(idx, key, ti); }}
+                                className={`w-3 h-3 shrink-0 rounded border flex items-center justify-center cursor-pointer transition-colors ${todo.done ? 'bg-pink-400 border-pink-400 text-white' : 'border-pink-300'}`}>
+                                {todo.done && <Check size={7} />}
+                              </button>
+                              <span className={`text-[10px] leading-tight ${todo.done ? 'line-through text-gray-400' : 'text-[#3c3830]'}`}>{todo.text}</span>
+                            </div>
+                          ))}
                         </div>
                       ))}
                     </div>
