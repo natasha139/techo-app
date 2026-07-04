@@ -243,21 +243,38 @@ export default function BabyTechoGrid({
     setEditItems([{ text: '', done: false }]);
   };
 
-  const [editingDailyNotes, setEditingDailyNotes] = useState<{ [dayIdx: number]: BabyDailyNote }>({});
+  const [editingDailyNotes, setEditingDailyNotes] = useState<{ [dayIdx: number]: { todos: { text: string; done: boolean }[] } }>({});
+  const [editingSummary, setEditingSummary] = useState<{ [dayIdx: number]: { outdoorMinutes: string; summary: string } }>({});
 
   const openDayNoteEditor = (idx: number) => {
     if (editingDailyNotes[idx]) return;
     const parsed = parseBabyDailyNote(renderedNotes[idx] || '');
-    if (!parsed.todos.length) parsed.todos = [{ text: '', done: false }];
-    setEditingDailyNotes(prev => ({ ...prev, [idx]: parsed }));
+    const todos = parsed.todos.length ? parsed.todos : [{ text: '', done: false }];
+    setEditingDailyNotes(prev => ({ ...prev, [idx]: { todos } }));
   };
 
   const saveDayNote = (idx: number) => {
-    const note = editingDailyNotes[idx];
-    if (!note) return;
-    const serialized = serializeBabyDailyNote(note);
+    const editing = editingDailyNotes[idx];
+    if (!editing) return;
+    const existing = parseBabyDailyNote(renderedNotes[idx] || '');
+    const serialized = serializeBabyDailyNote({ todos: editing.todos, outdoorMinutes: existing.outdoorMinutes, summary: existing.summary });
     onSaveTodayNote(idx, serialized);
     setEditingDailyNotes(prev => { const n = { ...prev }; delete n[idx]; return n; });
+  };
+
+  const openDaySummaryEditor = (idx: number) => {
+    if (editingSummary[idx]) return;
+    const parsed = parseBabyDailyNote(renderedNotes[idx] || '');
+    setEditingSummary(prev => ({ ...prev, [idx]: { outdoorMinutes: parsed.outdoorMinutes, summary: parsed.summary } }));
+  };
+
+  const saveDaySummary = (idx: number) => {
+    const editing = editingSummary[idx];
+    if (!editing) return;
+    const existing = parseBabyDailyNote(renderedNotes[idx] || '');
+    const serialized = serializeBabyDailyNote({ todos: existing.todos, outdoorMinutes: editing.outdoorMinutes, summary: editing.summary });
+    onSaveTodayNote(idx, serialized);
+    setEditingSummary(prev => { const n = { ...prev }; delete n[idx]; return n; });
   };
 
   const updateDayNoteTodo = (dayIdx: number, todoIdx: number, field: 'text' | 'done', value: string | boolean) => {
@@ -632,7 +649,7 @@ export default function BabyTechoGrid({
           <div className="grid grid-cols-15 divide-x divide-[#eae6d8]">
             <div className="col-span-1 bg-[#fdfdfb] flex items-center justify-center text-base">🌞</div>
             {daysOfWeek.map((day, idx) => {
-              const editing = editingDailyNotes[idx];
+              const editing = editingSummary[idx];
               const parsed = parseBabyDailyNote(renderedNotes[idx] || '');
               return (
                 <div key={idx} className={`col-span-2 p-1.5 min-h-[52px] text-[10px] ${day.isToday ? 'bg-pink-50/40' : 'bg-white'}`}>
@@ -643,7 +660,7 @@ export default function BabyTechoGrid({
                           type="number"
                           min="0"
                           value={editing.outdoorMinutes}
-                          onChange={e => setEditingDailyNotes(prev => ({ ...prev, [idx]: { ...prev[idx], outdoorMinutes: e.target.value } }))}
+                          onChange={e => setEditingSummary(prev => ({ ...prev, [idx]: { ...prev[idx], outdoorMinutes: e.target.value } }))}
                           placeholder="0"
                           className="w-10 border border-green-200 rounded px-1 py-0.5 text-[10px] focus:outline-none bg-white text-center"
                         />
@@ -651,13 +668,17 @@ export default function BabyTechoGrid({
                       </div>
                       <input
                         value={editing.summary}
-                        onChange={e => setEditingDailyNotes(prev => ({ ...prev, [idx]: { ...prev[idx], summary: e.target.value } }))}
+                        onChange={e => setEditingSummary(prev => ({ ...prev, [idx]: { ...prev[idx], summary: e.target.value } }))}
                         placeholder="今日总结..."
                         className="w-full border border-pink-100 rounded px-1 py-0.5 text-[10px] focus:outline-none bg-white"
                       />
+                      <div className="flex items-center justify-end gap-1 mt-0.5">
+                        <button onClick={() => setEditingSummary(prev => { const n = { ...prev }; delete n[idx]; return n; })} className="text-[9px] px-1 py-0.5 text-gray-400 hover:bg-gray-100 rounded border cursor-pointer">取消</button>
+                        <button onClick={() => saveDaySummary(idx)} className="text-[9px] px-1.5 py-0.5 bg-[#c06080] text-white rounded hover:bg-[#a04060] cursor-pointer">存</button>
+                      </div>
                     </div>
                   ) : (
-                    <div className="flex flex-col gap-0.5 cursor-pointer" onClick={() => openDayNoteEditor(idx)}>
+                    <div className="flex flex-col gap-0.5 cursor-pointer" onClick={() => openDaySummaryEditor(idx)}>
                       {parsed.outdoorMinutes ? (
                         <span className="text-[10px] text-green-700 font-semibold">🌿 {parsed.outdoorMinutes}min</span>
                       ) : (
