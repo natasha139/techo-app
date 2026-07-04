@@ -30,6 +30,14 @@ const colorPresets = [
   { label: '运动', bg: '#f7fee7', border: '#a3e635', textClass: 'text-lime-900' },
   { label: '就医/健康', bg: '#f5f3ff', border: '#c084fc', textClass: 'text-violet-900' },
   { label: '其他', bg: '#fffbeb', border: '#fcd34d', textClass: 'text-amber-900' },
+  { label: '深粉', bg: '#fce7f3', border: '#ec4899', textClass: 'text-pink-900' },
+  { label: '深蓝', bg: '#dbeafe', border: '#2563eb', textClass: 'text-blue-900' },
+  { label: '深绿', bg: '#dcfce7', border: '#16a34a', textClass: 'text-green-900' },
+  { label: '深橙', bg: '#ffedd5', border: '#ea580c', textClass: 'text-orange-900' },
+  { label: '深紫', bg: '#ede9fe', border: '#7c3aed', textClass: 'text-violet-900' },
+  { label: '红', bg: '#fee2e2', border: '#dc2626', textClass: 'text-red-900' },
+  { label: '青', bg: '#ccfbf1', border: '#0d9488', textClass: 'text-teal-900' },
+  { label: '金', bg: '#fef9c3', border: '#ca8a04', textClass: 'text-yellow-900' },
 ];
 
 type TodoItem = { text: string; done: boolean };
