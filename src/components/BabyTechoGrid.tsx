@@ -194,7 +194,7 @@ export default function BabyTechoGrid({
   const hours = Array.from({ length: 24 }).map((_, i) => i);
   const currentWeekKey = getWeekKey(weekOffset);
   const currentMonthKey = currentWeekKey.slice(0, 7);
-  const monthStr = `${today.getFullYear()}年${today.getMonth() + 1}月`;
+  const monthStr = `${currentMonthKey.slice(0, 4)}年${parseInt(currentMonthKey.slice(5, 7))}月`;
 
   const hourScrollRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -390,7 +390,7 @@ export default function BabyTechoGrid({
               {(['week', 'month'] as const).map(s => (
                 <button key={s} onClick={() => setGoalScope(s)}
                   className={`px-3 py-1 rounded font-semibold transition-all cursor-pointer ${goalScope === s ? 'bg-[#c06080] text-white' : 'text-[#c06080]/70 hover:bg-pink-100'}`}>
-                  {s === 'week' ? '本周目标' : '本月目标'}
+                  {s === 'week' ? '本周目标' : `${parseInt(currentMonthKey.slice(5, 7))}月目标`}
                 </button>
               ))}
             </div>

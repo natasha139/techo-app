@@ -995,7 +995,7 @@ export default function App() {
   };
 
   // 15. Child Goals
-  const handleAddChildGoal = (goal: { text: string; done: boolean; scope: 'week' | 'month' }) => {
+  const handleAddChildGoal = (goal: { text: string; done: boolean; scope: 'week' | 'month'; month?: string; week?: string }) => {
     const item = { ...goal, id: `g_${Date.now()}` };
     setChildGoals(prev => [...prev, item]);
     apiCall(() => api.childGoals.upsert(syncCode, item), 'child_goals');

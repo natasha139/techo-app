@@ -53,7 +53,7 @@ async function initSchemas(env) {
     `CREATE TABLE IF NOT EXISTS child_logs (id TEXT PRIMARY KEY, sync_code TEXT NOT NULL, time TEXT NOT NULL DEFAULT '', type TEXT NOT NULL DEFAULT 'notes', spec TEXT NOT NULL DEFAULT '', notes TEXT NOT NULL DEFAULT '', updated_at TEXT NOT NULL)`,
     `CREATE TABLE IF NOT EXISTS child_diaries (id TEXT PRIMARY KEY, sync_code TEXT NOT NULL, date TEXT NOT NULL DEFAULT '', title TEXT NOT NULL DEFAULT '', content TEXT NOT NULL DEFAULT '', mood TEXT, height TEXT, weight TEXT, updated_at TEXT NOT NULL)`,
     `CREATE TABLE IF NOT EXISTS parenting_resources (id TEXT PRIMARY KEY, sync_code TEXT NOT NULL, name TEXT NOT NULL DEFAULT '', type TEXT NOT NULL DEFAULT 'app', subject TEXT, age_range TEXT, rating INTEGER NOT NULL DEFAULT 0, notes TEXT, url TEXT, updated_at TEXT NOT NULL)`,
-    `CREATE TABLE IF NOT EXISTS child_goals (id TEXT PRIMARY KEY, sync_code TEXT NOT NULL, scope TEXT NOT NULL DEFAULT 'week', text TEXT NOT NULL DEFAULT '', is_done INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL, updated_at TEXT NOT NULL)`,
+    `CREATE TABLE IF NOT EXISTS child_goals (id TEXT PRIMARY KEY, sync_code TEXT NOT NULL, scope TEXT NOT NULL DEFAULT 'week', text TEXT NOT NULL DEFAULT '', is_done INTEGER NOT NULL DEFAULT 0, month TEXT, week TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL)`,
     `CREATE TABLE IF NOT EXISTS growth_links (id TEXT PRIMARY KEY, sync_code TEXT NOT NULL, title TEXT NOT NULL DEFAULT '', url TEXT NOT NULL DEFAULT '', note TEXT NOT NULL DEFAULT '', created_at TEXT NOT NULL, updated_at TEXT NOT NULL)`,
   ];
   for (const sql of pTables) await p.exec(sql);
@@ -299,11 +299,11 @@ async function handleParenting(request, env, path, method, syncCode) {
         ? db.prepare('SELECT * FROM child_goals WHERE sync_code = ? AND scope = ? ORDER BY created_at ASC').bind(syncCode, scope)
         : db.prepare('SELECT * FROM child_goals WHERE sync_code = ? ORDER BY created_at ASC').bind(syncCode);
       const { results } = await q.all();
-      return json(results.map(r => ({ id: r.id, scope: r.scope, text: r.text, isDone: r.is_done === 1, createdAt: r.created_at })));
+      return json(results.map(r => ({ id: r.id, scope: r.scope, text: r.text, isDone: r.is_done === 1, month: r.month, week: r.week, createdAt: r.created_at })));
     }
     if (method === 'POST') {
       const b = await request.json();
-      await db.prepare('INSERT OR REPLACE INTO child_goals (id, sync_code, scope, text, is_done, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)').bind(b.id, syncCode, b.scope ?? 'week', b.text ?? '', b.isDone ? 1 : 0, b.createdAt || now(), now()).run();
+      await db.prepare('INSERT OR REPLACE INTO child_goals (id, sync_code, scope, text, is_done, month, week, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)').bind(b.id, syncCode, b.scope ?? 'week', b.text ?? '', b.isDone ? 1 : 0, b.month ?? null, b.week ?? null, b.createdAt || now(), now()).run();
       return json({ ok: true });
     }
     if (method === 'DELETE') {
