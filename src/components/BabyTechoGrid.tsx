@@ -3,7 +3,7 @@ import { Printer, Plus, Trash2, CheckCircle2, Circle, ChevronDown, ChevronUp, Pe
 import { useReactToPrint } from 'react-to-print';
 import { PlannerCell } from '../types';
 
-type Goal = { id: string; text: string; done: boolean; scope: 'week' | 'month' };
+type Goal = { id: string; text: string; done: boolean; scope: 'week' | 'month'; month?: string; week?: string };
 
 interface BabyTechoGridProps {
   cells: PlannerCell[];
@@ -63,6 +63,14 @@ const serializeBabyDailyNote = (note: BabyDailyNote): string => {
   ].filter(Boolean);
   return [...todoLines, ...metaLines].join('\n');
 };
+
+function getWeekKey(weekOffset = 0): string {
+  const today = new Date();
+  const dow = today.getDay();
+  const monday = new Date(today);
+  monday.setDate(today.getDate() - (dow === 0 ? 6 : dow - 1) + weekOffset * 7);
+  return monday.toISOString().slice(0, 10);
+}
 
 function getCurrentWeekDays(weekOffset = 0) {
   const today = new Date();
@@ -184,6 +192,8 @@ export default function BabyTechoGrid({
   const daysOfWeek = getCurrentWeekDays(weekOffset);
   const today = new Date();
   const hours = Array.from({ length: 24 }).map((_, i) => i);
+  const currentWeekKey = getWeekKey(weekOffset);
+  const currentMonthKey = currentWeekKey.slice(0, 7);
   const monthStr = `${today.getFullYear()}年${today.getMonth() + 1}月`;
 
   const hourScrollRef = useRef<HTMLDivElement>(null);
@@ -321,7 +331,8 @@ export default function BabyTechoGrid({
 
   const addGoal = () => {
     if (!goalInput.trim()) return;
-    onAddChildGoal?.({ text: goalInput.trim(), done: false, scope: goalScope });
+    const extra = goalScope === 'month' ? { month: currentMonthKey } : { week: currentWeekKey };
+    onAddChildGoal?.({ text: goalInput.trim(), done: false, scope: goalScope, ...extra });
     setGoalInput('');
   };
   const toggleGoal = (id: string) => onToggleChildGoal?.(id);
@@ -385,14 +396,14 @@ export default function BabyTechoGrid({
             </div>
 
             {/* Add input */}
-            <div className="flex gap-2">
-              <input
-                type="text"
+            <div className="flex gap-2 items-start">
+              <textarea
+                rows={2}
                 value={goalInput}
                 onChange={e => setGoalInput(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && addGoal()}
-                placeholder={goalScope === 'week' ? '本周想完成什么？' : '本月大目标...'}
-                className="flex-1 bg-white border border-pink-200 rounded-md px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-pink-300"
+                onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) addGoal(); }}
+                placeholder={goalScope === 'week' ? '本周想完成什么？（Cmd+Enter）' : '本月大目标...（Cmd+Enter）'}
+                className="flex-1 bg-white border border-pink-200 rounded-md px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-pink-300 resize-none"
               />
               <button onClick={addGoal}
                 className="px-2.5 py-1.5 bg-[#c06080] hover:bg-[#a04060] text-white rounded-md cursor-pointer transition-colors">
@@ -401,40 +412,45 @@ export default function BabyTechoGrid({
             </div>
 
             {/* Goals list */}
-            {childGoals.filter(g => g.scope === goalScope).length === 0 ? (
-              <p className="text-[11px] text-gray-300 text-center py-2">还没有{goalScope === 'week' ? '本周' : '本月'}目标</p>
-            ) : (
+            {(() => {
+              const filtered = goalScope === 'month'
+                ? childGoals.filter(g => g.scope === 'month' && g.month === currentMonthKey)
+                : childGoals.filter(g => g.scope === 'week' && g.week === currentWeekKey);
+              return filtered.length === 0 ? (
+                <p className="text-[11px] text-gray-300 text-center py-2">还没有{goalScope === 'week' ? '本周' : '本月'}目标</p>
+              ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1.5">
-                {childGoals.filter(g => g.scope === goalScope).map(g => (
-                  <div key={g.id} className="flex items-center gap-2 bg-white border border-pink-100 rounded-md px-2.5 py-1.5 group hover:border-pink-200 transition-colors">
+                {filtered.map(g => (
+                  <div key={g.id} className="flex items-start gap-2 bg-white border border-pink-100 rounded-md px-2.5 py-1.5 group hover:border-pink-200 transition-colors">
                     {editingGoalId === g.id ? (
                       <>
-                        <input
+                        <textarea
                           autoFocus
+                          rows={2}
                           value={editingGoalText}
                           onChange={e => setEditingGoalText(e.target.value)}
-                          onKeyDown={e => { if (e.key === 'Enter') confirmEditGoal(g.id); if (e.key === 'Escape') { setEditingGoalId(null); setEditingGoalText(''); } }}
-                          className="flex-1 text-xs px-1.5 py-0.5 border border-pink-300 rounded focus:outline-none focus:ring-1 focus:ring-pink-300 text-[#3a3528]"
+                          onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) confirmEditGoal(g.id); if (e.key === 'Escape') { setEditingGoalId(null); setEditingGoalText(''); } }}
+                          className="flex-1 text-xs px-1.5 py-0.5 border border-pink-300 rounded focus:outline-none focus:ring-1 focus:ring-pink-300 text-[#3a3528] resize-none"
                         />
-                        <button onClick={() => confirmEditGoal(g.id)} className="shrink-0 text-emerald-500 hover:text-emerald-600 cursor-pointer">
+                        <button onClick={() => confirmEditGoal(g.id)} className="shrink-0 text-emerald-500 hover:text-emerald-600 cursor-pointer mt-0.5">
                           <Check size={12} />
                         </button>
-                        <button onClick={() => { setEditingGoalId(null); setEditingGoalText(''); }} className="shrink-0 text-gray-300 hover:text-gray-500 cursor-pointer">
+                        <button onClick={() => { setEditingGoalId(null); setEditingGoalText(''); }} className="shrink-0 text-gray-300 hover:text-gray-500 cursor-pointer mt-0.5">
                           <X size={12} />
                         </button>
                       </>
                     ) : (
                       <>
-                        <button onClick={() => toggleGoal(g.id)} className="shrink-0 cursor-pointer text-gray-300 hover:text-[#c06080] transition-colors">
+                        <button onClick={() => toggleGoal(g.id)} className="shrink-0 cursor-pointer text-gray-300 hover:text-[#c06080] transition-colors mt-0.5">
                           {g.done ? <CheckCircle2 size={14} className="text-[#c06080]" /> : <Circle size={14} />}
                         </button>
-                        <span className={`flex-1 text-xs leading-snug ${g.done ? 'line-through text-gray-300' : 'text-[#3a3528]'}`}>{g.text}</span>
+                        <span className={`flex-1 text-xs leading-snug whitespace-pre-wrap ${g.done ? 'line-through text-gray-300' : 'text-[#3a3528]'}`}>{g.text}</span>
                         <button onClick={() => { setEditingGoalId(g.id); setEditingGoalText(g.text); }}
-                          className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-[#c06080] cursor-pointer transition-all shrink-0">
+                          className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-[#c06080] cursor-pointer transition-all shrink-0 mt-0.5">
                           <Pencil size={11} />
                         </button>
                         <button onClick={() => deleteGoal(g.id)}
-                          className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-400 cursor-pointer transition-all shrink-0">
+                          className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-400 cursor-pointer transition-all shrink-0 mt-0.5">
                           <Trash2 size={11} />
                         </button>
                       </>
@@ -442,7 +458,8 @@ export default function BabyTechoGrid({
                   </div>
                 ))}
               </div>
-            )}
+              );
+            })()}
           </div>
         )}
       </div>
