@@ -22,13 +22,14 @@ interface BabyTechoGridProps {
 }
 
 const colorPresets = [
-  { label: '作息/睡眠', bg: '#f0fdfa', border: '#99f6e4', textClass: 'text-teal-900' },
-  { label: '饮食/喂奶', bg: '#fff7ed', border: '#fed7aa', textClass: 'text-orange-900' },
-  { label: '玩耍/活动', bg: '#fdf2f8', border: '#fbcfe8', textClass: 'text-pink-900' },
-  { label: '学习', bg: '#f0fdf4', border: '#86efac', textClass: 'text-green-900' },
-  { label: '网课', bg: '#eff6ff', border: '#bfdbfe', textClass: 'text-blue-900' },
-  { label: '就医/健康', bg: '#faf5ff', border: '#e9d5ff', textClass: 'text-purple-900' },
-  { label: '其他', bg: '#fffbeb', border: '#fef3c7', textClass: 'text-amber-900' },
+  { label: '作息/睡眠', bg: '#ecfeff', border: '#67e8f9', textClass: 'text-cyan-900' },
+  { label: '饮食/喂奶', bg: '#fff7ed', border: '#fb923c', textClass: 'text-orange-900' },
+  { label: '玩耍/活动', bg: '#fff1f2', border: '#fda4af', textClass: 'text-rose-900' },
+  { label: '学习', bg: '#f0fdf4', border: '#4ade80', textClass: 'text-green-900' },
+  { label: '网课', bg: '#eff6ff', border: '#60a5fa', textClass: 'text-blue-900' },
+  { label: '运动', bg: '#f7fee7', border: '#a3e635', textClass: 'text-lime-900' },
+  { label: '就医/健康', bg: '#f5f3ff', border: '#c084fc', textClass: 'text-violet-900' },
+  { label: '其他', bg: '#fffbeb', border: '#fcd34d', textClass: 'text-amber-900' },
 ];
 
 type BabyDailyNote = {
