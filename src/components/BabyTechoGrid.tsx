@@ -337,6 +337,16 @@ export default function BabyTechoGrid({
     onSaveTodayNote(idx, serializeBabyDailyNote({ ...parsed, [sec]: parsed[sec].map((t, i) => i === todoIdx ? { ...t, done: !t.done } : t) }));
   };
 
+  const [editingSectionSlot, setEditingSectionSlot] = useState<{ dayIdx: number; sec: 'morning'|'noon'|'evening'; items: TodoItem[] } | null>(null);
+
+  const saveSectionSlot = () => {
+    if (!editingSectionSlot) return;
+    const { dayIdx, sec, items } = editingSectionSlot;
+    const existing = parseBabyDailyNote(renderedNotes[dayIdx] || '');
+    onSaveTodayNote(dayIdx, serializeBabyDailyNote({ ...existing, [sec]: items }));
+    setEditingSectionSlot(null);
+  };
+
   // Goals state
   const [goalScope, setGoalScope] = useState<'week' | 'month'>('week');
   const [goalInput, setGoalInput] = useState('');
@@ -518,9 +528,9 @@ export default function BabyTechoGrid({
               )}
               {(() => {
                 const SECTION_DIVIDERS = [
-                  { threshold: 9,  label: '早', bg: '#fffbeb', text: '#b45309', line: '#fcd34d' },
-                  { threshold: 14, label: '中', bg: '#f0fdf4', text: '#15803d', line: '#86efac' },
-                  { threshold: 20, label: '晚', bg: '#f5f3ff', text: '#7c3aed', line: '#c4b5fd' },
+                  { threshold: 9,  label: '早', sec: 'morning' as const, bg: '#fffbeb', text: '#b45309', line: '#fcd34d' },
+                  { threshold: 14, label: '中', sec: 'noon' as const,    bg: '#f0fdf4', text: '#15803d', line: '#86efac' },
+                  { threshold: 20, label: '晚', sec: 'evening' as const, bg: '#f5f3ff', text: '#7c3aed', line: '#c4b5fd' },
                 ];
                 const usedDivs = new Set<number>();
                 return activeHours.map(hour => {
@@ -529,11 +539,59 @@ export default function BabyTechoGrid({
                   return (
                     <React.Fragment key={hour}>
                       {divsBefore.map(d => (
-                        <div key={`sec-${d.threshold}`} className="grid grid-cols-15" style={{ background: d.bg, borderTop: `1.5px solid ${d.line}`, borderBottom: `1.5px solid ${d.line}` }}>
-                          <div className="col-span-1 flex items-center justify-center py-0.5 border-r border-[#eae6d8]" style={{ color: d.text }}>
+                        <div key={`sec-${d.threshold}`} className="grid grid-cols-15 border-b border-[#eae6d8]" style={{ background: d.bg, borderTop: `1.5px solid ${d.line}` }}>
+                          <div className="col-span-1 flex items-center justify-center py-1 border-r border-[#eae6d8]" style={{ color: d.text }}>
                             <span className="text-[9px] font-extrabold tracking-widest">{d.label}</span>
                           </div>
-                          <div className="col-span-14" />
+                          {daysOfWeek.map((_day, dayIdx) => {
+                            const parsed = parseBabyDailyNote(renderedNotes[dayIdx] || '');
+                            const isEditing = editingSectionSlot?.dayIdx === dayIdx && editingSectionSlot?.sec === d.sec;
+                            return (
+                              <div key={dayIdx} className="col-span-2 border-r last:border-r-0 border-[#eae6d8] p-0.5 min-h-[36px]" style={{ background: isEditing ? '#fff' : undefined }}>
+                                {isEditing ? (
+                                  <div className="flex flex-col gap-0.5">
+                                    {editingSectionSlot!.items.map((todo, ti) => (
+                                      <div key={ti} className="flex items-center gap-0.5">
+                                        <button onClick={() => setEditingSectionSlot(prev => prev ? { ...prev, items: prev.items.map((t, i) => i === ti ? { ...t, done: !t.done } : t) } : null)}
+                                          className={`w-2.5 h-2.5 shrink-0 rounded border flex items-center justify-center cursor-pointer ${todo.done ? 'bg-pink-400 border-pink-400 text-white' : 'border-pink-300'}`}>
+                                          {todo.done && <Check size={6} />}
+                                        </button>
+                                        <input value={todo.text} onChange={e => setEditingSectionSlot(prev => prev ? { ...prev, items: prev.items.map((t, i) => i === ti ? { ...t, text: e.target.value } : t) } : null)}
+                                          className="flex-1 min-w-0 border border-pink-100 rounded px-0.5 text-[9px] focus:outline-none bg-white" />
+                                        {editingSectionSlot!.items.length > 1 && (
+                                          <button onClick={() => setEditingSectionSlot(prev => prev ? { ...prev, items: prev.items.filter((_, i) => i !== ti) } : null)}
+                                            className="text-gray-300 hover:text-red-400 cursor-pointer"><X size={7} /></button>
+                                        )}
+                                      </div>
+                                    ))}
+                                    <button onClick={() => setEditingSectionSlot(prev => prev ? { ...prev, items: [...prev.items, { text: '', done: false }] } : null)}
+                                      className="text-[8px] text-pink-400 cursor-pointer flex items-center"><Plus size={7} /></button>
+                                    <div className="flex gap-0.5 justify-end mt-0.5">
+                                      <button onClick={() => setEditingSectionSlot(null)} className="text-[8px] px-1 text-gray-400 border rounded cursor-pointer">取消</button>
+                                      <button onClick={saveSectionSlot} className="text-[8px] px-1 bg-[#c06080] text-white rounded cursor-pointer">存</button>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div className="cursor-pointer group min-h-[28px]" onClick={() => {
+                                    const ex = parseBabyDailyNote(renderedNotes[dayIdx] || '');
+                                    setEditingSectionSlot({ dayIdx, sec: d.sec, items: ex[d.sec].length ? ex[d.sec] : [{ text: '', done: false }] });
+                                  }}>
+                                    {parsed[d.sec].filter(t => t.text.trim()).length === 0 ? (
+                                      <span className="text-[8px] text-gray-300 opacity-0 group-hover:opacity-100">+</span>
+                                    ) : parsed[d.sec].map((todo, ti) => (
+                                      <div key={ti} className="flex items-center gap-0.5 mb-0.5">
+                                        <button type="button" onClick={e => { e.stopPropagation(); toggleDayNoteTodoDirect(dayIdx, d.sec, ti); }}
+                                          className={`w-2.5 h-2.5 shrink-0 rounded border flex items-center justify-center cursor-pointer ${todo.done ? 'bg-pink-400 border-pink-400 text-white' : 'border-pink-300'}`}>
+                                          {todo.done && <Check size={6} />}
+                                        </button>
+                                        <span className={`text-[9px] leading-tight break-words ${todo.done ? 'line-through text-gray-400' : ''}`}>{todo.text}</span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
                         </div>
                       ))}
                       <div className="grid grid-cols-15 border-b border-[#eae6d8]/60">
@@ -626,75 +684,8 @@ export default function BabyTechoGrid({
           );
         })()}
 
-        {/* Daily notes section */}
+        {/* Outdoor + summary row */}
         <div className="border-t-2 border-[#eae6d8] bg-[#fbfaf5]">
-          {/* Section header */}
-          <div className="grid grid-cols-15 border-b border-[#eae6d8] bg-[#fdf6f0]">
-            <div className="col-span-1 border-r border-[#eae6d8] py-1 text-[10px] text-center font-bold text-[#8c8577] flex items-center justify-center">每日</div>
-            <div className="col-span-14 py-1 px-3 text-[10px] font-semibold text-[#c06080]/70 tracking-wider">
-              ✅ 每日 To Do
-            </div>
-          </div>
-          {/* To Do row */}
-          <div className="grid grid-cols-15 divide-x divide-[#eae6d8] border-b border-[#eae6d8]">
-            <div className="col-span-1 bg-[#fdfdfb] flex items-center justify-center text-base">📋</div>
-            {daysOfWeek.map((day, idx) => {
-              const editing = editingDailyNotes[idx];
-              const parsed = parseBabyDailyNote(renderedNotes[idx] || '');
-              return (
-                <div key={idx} className={`col-span-2 p-1.5 min-h-[72px] text-[10px] ${day.isToday ? 'bg-pink-50/40' : 'bg-white'}`}>
-                  {editing ? (
-                    <div className="flex flex-col gap-1.5">
-                      {SECTIONS.map(({ key, label }) => (
-                        <div key={key}>
-                          <div className="text-[9px] text-[#c06080]/60 font-bold mb-0.5">{label}</div>
-                          {editing[key].map((todo, ti) => (
-                            <div key={ti} className="flex items-center gap-1 mb-0.5">
-                              <button type="button" onClick={() => updateDayNoteTodo(idx, key, ti, 'done', !todo.done)}
-                                className={`w-3 h-3 shrink-0 rounded border flex items-center justify-center cursor-pointer transition-colors ${todo.done ? 'bg-pink-400 border-pink-400 text-white' : 'border-pink-300'}`}>
-                                {todo.done && <Check size={7} />}
-                              </button>
-                              <input value={todo.text} onChange={e => updateDayNoteTodo(idx, key, ti, 'text', e.target.value)}
-                                placeholder="待办..." className={`flex-1 min-w-0 border border-pink-100 rounded px-1 py-0.5 text-[10px] focus:outline-none bg-white ${todo.done ? 'line-through text-gray-400' : ''}`} />
-                              {editing[key].length > 1 && (
-                                <button type="button" onClick={() => removeDayNoteTodo(idx, key, ti)} className="text-gray-300 hover:text-red-400 cursor-pointer shrink-0"><X size={9} /></button>
-                              )}
-                            </div>
-                          ))}
-                          <button type="button" onClick={() => addDayNoteTodo(idx, key)} className="text-[9px] text-pink-400 hover:text-pink-600 cursor-pointer flex items-center gap-0.5"><Plus size={8} /></button>
-                        </div>
-                      ))}
-                      <div className="flex justify-end gap-1 mt-0.5">
-                        <button onClick={() => setEditingDailyNotes(prev => { const n = { ...prev }; delete n[idx]; return n; })} className="text-[9px] px-1 py-0.5 text-gray-400 hover:bg-gray-100 rounded border cursor-pointer">取消</button>
-                        <button onClick={() => saveDayNote(idx)} className="text-[9px] px-1.5 py-0.5 bg-[#c06080] text-white rounded hover:bg-[#a04060] cursor-pointer">存</button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col gap-1 cursor-pointer" onClick={() => openDayNoteEditor(idx)}>
-                      {SECTIONS.every(({ key }) => parsed[key].length === 0) ? (
-                        <span className="text-[9px] text-gray-300">点击添加</span>
-                      ) : SECTIONS.map(({ key, label }) => parsed[key].length === 0 ? null : (
-                        <div key={key}>
-                          <div className="text-[8px] text-[#c06080]/50 font-bold leading-tight mb-0.5">{label}</div>
-                          {parsed[key].map((todo, ti) => (
-                            <div key={ti} className="flex items-center gap-1 mb-0.5">
-                              <button type="button"
-                                onClick={e => { e.stopPropagation(); toggleDayNoteTodoDirect(idx, key, ti); }}
-                                className={`w-3 h-3 shrink-0 rounded border flex items-center justify-center cursor-pointer transition-colors ${todo.done ? 'bg-pink-400 border-pink-400 text-white' : 'border-pink-300'}`}>
-                                {todo.done && <Check size={7} />}
-                              </button>
-                              <span className={`text-[10px] leading-tight ${todo.done ? 'line-through text-gray-400' : 'text-[#3c3830]'}`}>{todo.text}</span>
-                            </div>
-                          ))}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-          {/* Outdoor + summary row */}
           <div className="grid grid-cols-15 border-b border-[#eae6d8] bg-[#fdf6f0]">
             <div className="col-span-1 border-r border-[#eae6d8] py-1 text-[10px] text-center font-bold text-[#8c8577] flex items-center justify-center">总结</div>
             <div className="col-span-14 py-1 px-3 text-[10px] font-semibold text-[#c06080]/70 tracking-wider">
