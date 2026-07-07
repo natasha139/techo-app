@@ -325,7 +325,7 @@ export default function BabyTechoGrid({
     const editing = editingSummary[idx];
     if (!editing) return;
     const existing = parseBabyDailyNote(renderedNotes[idx] || '');
-    const serialized = serializeBabyDailyNote({ todos: existing.todos, outdoorMinutes: editing.outdoorMinutes, summary: editing.summary });
+    const serialized = serializeBabyDailyNote({ morning: existing.morning, noon: existing.noon, evening: existing.evening, outdoorMinutes: editing.outdoorMinutes, summary: editing.summary });
     onSaveTodayNote(idx, serialized);
     setEditingSummary(prev => { const n = { ...prev }; delete n[idx]; return n; });
   };
