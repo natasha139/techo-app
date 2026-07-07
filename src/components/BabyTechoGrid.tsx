@@ -357,13 +357,23 @@ export default function BabyTechoGrid({
     onSaveTodayNote(idx, serializeBabyDailyNote({ ...parsed, [sec]: parsed[sec].map((t, i) => i === todoIdx ? { ...t, done: !t.done } : t) }));
   };
 
-  const [editingSectionSlot, setEditingSectionSlot] = useState<{ dayIdx: number; sec: 'morning'|'noon'|'evening'; items: TodoItem[] } | null>(null);
+  const [editingSectionSlot, setEditingSectionSlot] = useState<{ dayIdx: number; sec: 'morning'|'noon'|'evening'; items: TodoItem[]; showCopyPicker?: boolean; copyTargets?: number[] } | null>(null);
 
   const saveSectionSlot = () => {
     if (!editingSectionSlot) return;
     const { dayIdx, sec, items } = editingSectionSlot;
     const existing = parseBabyDailyNote(renderedNotes[dayIdx] || '');
     onSaveTodayNote(dayIdx, serializeBabyDailyNote({ ...existing, [sec]: items }));
+    setEditingSectionSlot(null);
+  };
+
+  const copySectionSlot = () => {
+    if (!editingSectionSlot) return;
+    const { sec, items, copyTargets = [] } = editingSectionSlot;
+    copyTargets.forEach(targetIdx => {
+      const existing = parseBabyDailyNote(renderedNotes[targetIdx] || '');
+      onSaveTodayNote(targetIdx, serializeBabyDailyNote({ ...existing, [sec]: items }));
+    });
     setEditingSectionSlot(null);
   };
 
@@ -595,8 +605,34 @@ export default function BabyTechoGrid({
                                       className="text-[8px] text-pink-400 cursor-pointer flex items-center"><Plus size={7} /></button>
                                     <div className="flex gap-0.5 justify-end mt-0.5">
                                       <button onClick={() => setEditingSectionSlot(null)} className="text-[8px] px-1 text-gray-400 border rounded cursor-pointer">取消</button>
+                                      <button onClick={() => setEditingSectionSlot(prev => prev ? { ...prev, showCopyPicker: !prev.showCopyPicker, copyTargets: [] } : null)} className="text-[8px] px-1 text-blue-400 border border-blue-200 rounded cursor-pointer">复制→</button>
                                       <button onClick={saveSectionSlot} className="text-[8px] px-1 bg-[#c06080] text-white rounded cursor-pointer">存</button>
                                     </div>
+                                    {editingSectionSlot?.showCopyPicker && (
+                                      <div className="mt-0.5 border border-blue-100 rounded p-1 bg-blue-50/50">
+                                        <div className="text-[7px] text-blue-400 mb-0.5">复制到：</div>
+                                        <div className="flex flex-wrap gap-0.5 mb-0.5">
+                                          {daysOfWeek.map((day, i) => {
+                                            const isSource = i === editingSectionSlot.dayIdx;
+                                            const isSelected = editingSectionSlot.copyTargets?.includes(i) ?? false;
+                                            return (
+                                              <button key={i} disabled={isSource}
+                                                onClick={() => setEditingSectionSlot(prev => {
+                                                  if (!prev) return null;
+                                                  const targets = prev.copyTargets || [];
+                                                  const already = targets.includes(i);
+                                                  return { ...prev, copyTargets: already ? targets.filter(x => x !== i) : [...targets, i] };
+                                                })}
+                                                className={`text-[7px] px-1 py-0.5 rounded ${isSource ? 'bg-gray-100 text-gray-300 cursor-not-allowed' : isSelected ? 'bg-blue-400 text-white cursor-pointer' : 'bg-white border border-blue-200 text-blue-500 cursor-pointer'}`}>
+                                                {day.text}
+                                              </button>
+                                            );
+                                          })}
+                                        </div>
+                                        <button onClick={copySectionSlot} disabled={!(editingSectionSlot.copyTargets?.length)}
+                                          className="text-[7px] px-1.5 py-0.5 bg-blue-400 text-white rounded cursor-pointer disabled:opacity-40">确认复制</button>
+                                      </div>
+                                    )}
                                   </div>
                                 ) : (
                                   <div className="cursor-pointer group min-h-[28px]" onClick={() => {
