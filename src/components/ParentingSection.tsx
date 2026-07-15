@@ -837,6 +837,185 @@ export default function ParentingSection({
               </div>
             </div>
           )}
+
+          {subTab === 'dashboard' && (
+            <div className="animate-fade-in flex flex-col h-full flex-1">
+              <div className="flex items-center justify-between border-b-2 border-[#eae6d8] pb-3 mb-6 select-none">
+                <h3 className="font-display font-bold text-[#48453f] text-sm flex items-center gap-2">
+                  <Gauge size={18} className="text-techo-pink" />
+                  小树每日成长仪表盘 (Daily Dashboard)
+                </h3>
+                <span className="text-[10px] text-techo-pink font-bold font-mono">DAILY CHECK-IN</span>
+              </div>
+
+              <form onSubmit={submitDashboard} className="bg-pink-50/20 border border-pink-100 p-4 rounded-md mb-6 space-y-4 text-xs">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[10px] font-bold text-gray-500 mb-1">日期 (Date)</label>
+                    <input type="date" value={ddDate} onChange={e => setDdDate(e.target.value)}
+                      className="w-full bg-white border border-[#c2bdae] p-2 rounded text-xs focus:outline-none focus:ring-1 focus:ring-pink-400" />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-gray-500 mb-1">今日唯一 Checkpoint</label>
+                    <input type="text" value={ddCheckpoint} onChange={e => setDdCheckpoint(e.target.value)}
+                      placeholder="例如: 圈关键字"
+                      className="w-full bg-white border border-[#c2bdae] p-2 rounded text-xs focus:outline-none focus:ring-1 focus:ring-pink-400" />
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-[10px] font-bold text-gray-500 mb-1">今日主任务 (Main Task)</label>
+                    <input type="text" value={ddMainTask} onChange={e => setDdMainTask(e.target.value)}
+                      placeholder="今天最重要的一件事"
+                      className="w-full bg-white border border-[#c2bdae] p-2 rounded text-xs focus:outline-none focus:ring-1 focus:ring-pink-400" />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold text-gray-500 mb-1">电量值 ({ddBattery}%)</label>
+                  <div className="flex gap-2">
+                    {[20, 40, 60, 80, 100].map(v => (
+                      <button key={v} type="button" onClick={() => setDdBattery(v)}
+                        className={`flex-1 py-1.5 rounded text-[11px] font-bold border cursor-pointer transition-colors ${
+                          ddBattery === v ? 'bg-techo-pink text-white border-techo-pink' : 'bg-white text-gray-500 border-[#c2bdae] hover:bg-pink-50'
+                        }`}>
+                        {v}%
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <div>
+                    <label className="block text-[10px] font-bold text-gray-500 mb-1">启动 ({ddExecStartup})</label>
+                    <input type="range" min="1" max="5" value={ddExecStartup} onChange={e => setDdExecStartup(Number(e.target.value))} className="w-full accent-[#d97d8c]" />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-gray-500 mb-1">持续 ({ddExecPersist})</label>
+                    <input type="range" min="1" max="5" value={ddExecPersist} onChange={e => setDdExecPersist(Number(e.target.value))} className="w-full accent-[#d97d8c]" />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-gray-500 mb-1">工作记忆 ({ddExecMemory})</label>
+                    <input type="range" min="1" max="5" value={ddExecMemory} onChange={e => setDdExecMemory(Number(e.target.value))} className="w-full accent-[#d97d8c]" />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-gray-500 mb-1">自我检查 ({ddExecCheck})</label>
+                    <input type="range" min="1" max="5" value={ddExecCheck} onChange={e => setDdExecCheck(Number(e.target.value))} className="w-full accent-[#d97d8c]" />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <div>
+                    <label className="block text-[10px] font-bold text-gray-500 mb-1">崩溃频率 ({ddEmoMeltdown})</label>
+                    <input type="range" min="1" max="5" value={ddEmoMeltdown} onChange={e => setDdEmoMeltdown(Number(e.target.value))} className="w-full accent-[#d97d8c]" />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-gray-500 mb-1">恢复速度 ({ddEmoRecovery})</label>
+                    <input type="range" min="1" max="5" value={ddEmoRecovery} onChange={e => setDdEmoRecovery(Number(e.target.value))} className="w-full accent-[#d97d8c]" />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-gray-500 mb-1">接受安慰 ({ddEmoComfort})</label>
+                    <input type="range" min="1" max="5" value={ddEmoComfort} onChange={e => setDdEmoComfort(Number(e.target.value))} className="w-full accent-[#d97d8c]" />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-gray-500 mb-1">勇敢回来 ({ddEmoBounce})</label>
+                    <input type="range" min="1" max="5" value={ddEmoBounce} onChange={e => setDdEmoBounce(Number(e.target.value))} className="w-full accent-[#d97d8c]" />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold text-gray-500 mb-1.5">学习习惯</label>
+                  <div className="flex flex-wrap gap-3">
+                    {([
+                      ['habitKeywords', ddHabitKeywords, setDdHabitKeywords, '圈关键字'],
+                      ['habitNumbers', ddHabitNumbers, setDdHabitNumbers, '数字清楚'],
+                      ['habitCarry', ddHabitCarry, setDdHabitCarry, '进退位检查'],
+                      ['habitAnswer', ddHabitAnswer, setDdHabitAnswer, '答案回家'],
+                      ['habitRuler', ddHabitRuler, setDdHabitRuler, '用尺子'],
+                    ] as const).map(([key, val, setter, label]) => (
+                      <label key={key} className="flex items-center gap-1.5 bg-white border border-[#c2bdae] rounded px-2.5 py-1.5 cursor-pointer text-[11px]">
+                        <input type="checkbox" checked={val} onChange={e => setter(e.target.checked)} className="accent-[#d97d8c]" />
+                        {label}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-[10px] font-bold text-gray-500 mb-1">妈妈时间压力 ({ddMomTime})</label>
+                    <input type="range" min="1" max="5" value={ddMomTime} onChange={e => setDdMomTime(Number(e.target.value))} className="w-full accent-[#d97d8c]" />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-gray-500 mb-1">妈妈情绪消耗 ({ddMomEmotion})</label>
+                    <input type="range" min="1" max="5" value={ddMomEmotion} onChange={e => setDdMomEmotion(Number(e.target.value))} className="w-full accent-[#d97d8c]" />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-gray-500 mb-1">今天快乐时刻 ({ddMomHappy})</label>
+                    <input type="range" min="1" max="5" value={ddMomHappy} onChange={e => setDdMomHappy(Number(e.target.value))} className="w-full accent-[#d97d8c]" />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 gap-3">
+                  <div>
+                    <label className="block text-[10px] font-bold text-gray-500 mb-1">值得看见的进步</label>
+                    <input type="text" value={ddReflection1} onChange={e => setDdReflection1(e.target.value)}
+                      className="w-full bg-white border border-[#c2bdae] p-2 rounded text-xs focus:outline-none focus:ring-1 focus:ring-pink-400" />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-gray-500 mb-1">最大触发点</label>
+                    <input type="text" value={ddReflection2} onChange={e => setDdReflection2(e.target.value)}
+                      className="w-full bg-white border border-[#c2bdae] p-2 rounded text-xs focus:outline-none focus:ring-1 focus:ring-pink-400" />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-gray-500 mb-1">明天只优化一件事</label>
+                    <input type="text" value={ddReflection3} onChange={e => setDdReflection3(e.target.value)}
+                      className="w-full bg-white border border-[#c2bdae] p-2 rounded text-xs focus:outline-none focus:ring-1 focus:ring-pink-400" />
+                  </div>
+                </div>
+
+                <button type="submit"
+                  className="w-full py-2 bg-techo-pink hover:bg-[#bd6372] text-white text-xs font-bold rounded cursor-pointer transition-colors">
+                  + 保存今日仪表盘
+                </button>
+              </form>
+
+              <div className="space-y-2 overflow-y-auto max-h-[350px] pr-1 flex-1">
+                {dashboardLogs.length === 0 ? (
+                  <div className="text-center py-12 text-gray-400 text-xs">
+                    <Gauge size={24} className="mx-auto mb-2 opacity-20" />
+                    <p>还没有仪表盘记录，从上面填一份今天的吧</p>
+                  </div>
+                ) : (
+                  dashboardLogs.map(log => (
+                    <div key={log.id} className="bg-white border border-[#e8e4da] rounded-md px-3 py-2.5 group hover:border-pink-200 transition-colors">
+                      <div className="flex items-center justify-between gap-2 mb-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-[9px] font-mono text-techo-pink bg-pink-50 px-1.5 py-0.5 rounded border border-pink-100 shrink-0">
+                            {log.date}
+                          </span>
+                          <span className="text-xs font-bold text-[#3c3830]">{log.mainTask || '（未填主任务）'}</span>
+                          <span className="text-[10px] text-gray-400">电量 {log.battery}%</span>
+                        </div>
+                        <button onClick={() => onDeleteDashboardLog?.(log.id)}
+                          className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-400 cursor-pointer p-1 transition-all shrink-0">
+                          <Trash2 size={11} />
+                        </button>
+                      </div>
+                      {log.checkpoint && (
+                        <p className="text-[10px] text-gray-400 mb-1">Checkpoint: {log.checkpoint}</p>
+                      )}
+                      {(log.reflection1 || log.reflection2 || log.reflection3) && (
+                        <div className="text-[10px] text-gray-500 space-y-0.5 mt-1.5 pt-1.5 border-t border-[#f0ede4]">
+                          {log.reflection1 && <p>✓ {log.reflection1}</p>}
+                          {log.reflection2 && <p>⚡ {log.reflection2}</p>}
+                          {log.reflection3 && <p>→ {log.reflection3}</p>}
+                        </div>
+                      )}
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
