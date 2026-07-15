@@ -55,6 +55,7 @@ async function initSchemas(env) {
     `CREATE TABLE IF NOT EXISTS parenting_resources (id TEXT PRIMARY KEY, sync_code TEXT NOT NULL, name TEXT NOT NULL DEFAULT '', type TEXT NOT NULL DEFAULT 'app', subject TEXT, age_range TEXT, rating INTEGER NOT NULL DEFAULT 0, notes TEXT, url TEXT, updated_at TEXT NOT NULL)`,
     `CREATE TABLE IF NOT EXISTS child_goals (id TEXT PRIMARY KEY, sync_code TEXT NOT NULL, scope TEXT NOT NULL DEFAULT 'week', text TEXT NOT NULL DEFAULT '', is_done INTEGER NOT NULL DEFAULT 0, month TEXT, week TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL)`,
     `CREATE TABLE IF NOT EXISTS growth_links (id TEXT PRIMARY KEY, sync_code TEXT NOT NULL, title TEXT NOT NULL DEFAULT '', url TEXT NOT NULL DEFAULT '', note TEXT NOT NULL DEFAULT '', created_at TEXT NOT NULL, updated_at TEXT NOT NULL)`,
+    `CREATE TABLE IF NOT EXISTS daily_dashboard_logs (id TEXT PRIMARY KEY, sync_code TEXT NOT NULL, date TEXT NOT NULL DEFAULT '', main_task TEXT NOT NULL DEFAULT '', checkpoint TEXT NOT NULL DEFAULT '', battery INTEGER NOT NULL DEFAULT 0, exec_startup INTEGER NOT NULL DEFAULT 0, exec_persist INTEGER NOT NULL DEFAULT 0, exec_memory INTEGER NOT NULL DEFAULT 0, exec_check INTEGER NOT NULL DEFAULT 0, emo_meltdown INTEGER NOT NULL DEFAULT 0, emo_recovery INTEGER NOT NULL DEFAULT 0, emo_comfort INTEGER NOT NULL DEFAULT 0, emo_bounce INTEGER NOT NULL DEFAULT 0, habit_keywords INTEGER NOT NULL DEFAULT 0, habit_numbers INTEGER NOT NULL DEFAULT 0, habit_carry INTEGER NOT NULL DEFAULT 0, habit_answer INTEGER NOT NULL DEFAULT 0, habit_ruler INTEGER NOT NULL DEFAULT 0, mom_time INTEGER NOT NULL DEFAULT 0, mom_emotion INTEGER NOT NULL DEFAULT 0, mom_happy INTEGER NOT NULL DEFAULT 0, reflection1 TEXT NOT NULL DEFAULT '', reflection2 TEXT NOT NULL DEFAULT '', reflection3 TEXT NOT NULL DEFAULT '', updated_at TEXT NOT NULL)`,
   ];
   for (const sql of pTables) await p.exec(sql);
 
@@ -326,6 +327,45 @@ async function handleParenting(request, env, path, method, syncCode) {
     if (method === 'DELETE') {
       const id = new URL(request.url).searchParams.get('id');
       await db.prepare('DELETE FROM growth_links WHERE id = ? AND sync_code = ?').bind(id, syncCode).run();
+      return json({ ok: true });
+    }
+  }
+
+  if (path === '/api/parenting/dashboard') {
+    if (method === 'GET') {
+      const { results } = await db.prepare('SELECT * FROM daily_dashboard_logs WHERE sync_code = ? ORDER BY date DESC').bind(syncCode).all();
+      return json(results.map(r => ({
+        id: r.id, date: r.date, mainTask: r.main_task, checkpoint: r.checkpoint, battery: r.battery,
+        execStartup: r.exec_startup, execPersist: r.exec_persist, execMemory: r.exec_memory, execCheck: r.exec_check,
+        emoMeltdown: r.emo_meltdown, emoRecovery: r.emo_recovery, emoComfort: r.emo_comfort, emoBounce: r.emo_bounce,
+        habitKeywords: r.habit_keywords === 1, habitNumbers: r.habit_numbers === 1, habitCarry: r.habit_carry === 1,
+        habitAnswer: r.habit_answer === 1, habitRuler: r.habit_ruler === 1,
+        momTime: r.mom_time, momEmotion: r.mom_emotion, momHappy: r.mom_happy,
+        reflection1: r.reflection1, reflection2: r.reflection2, reflection3: r.reflection3,
+      })));
+    }
+    if (method === 'POST') {
+      const b = await request.json();
+      await db.prepare(`INSERT OR REPLACE INTO daily_dashboard_logs (
+        id, sync_code, date, main_task, checkpoint, battery,
+        exec_startup, exec_persist, exec_memory, exec_check,
+        emo_meltdown, emo_recovery, emo_comfort, emo_bounce,
+        habit_keywords, habit_numbers, habit_carry, habit_answer, habit_ruler,
+        mom_time, mom_emotion, mom_happy,
+        reflection1, reflection2, reflection3, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).bind(
+        b.id, syncCode, b.date ?? '', b.mainTask ?? '', b.checkpoint ?? '', b.battery ?? 0,
+        b.execStartup ?? 0, b.execPersist ?? 0, b.execMemory ?? 0, b.execCheck ?? 0,
+        b.emoMeltdown ?? 0, b.emoRecovery ?? 0, b.emoComfort ?? 0, b.emoBounce ?? 0,
+        b.habitKeywords ? 1 : 0, b.habitNumbers ? 1 : 0, b.habitCarry ? 1 : 0, b.habitAnswer ? 1 : 0, b.habitRuler ? 1 : 0,
+        b.momTime ?? 0, b.momEmotion ?? 0, b.momHappy ?? 0,
+        b.reflection1 ?? '', b.reflection2 ?? '', b.reflection3 ?? '', now()
+      ).run();
+      return json({ ok: true });
+    }
+    if (method === 'DELETE') {
+      const id = new URL(request.url).searchParams.get('id');
+      await db.prepare('DELETE FROM daily_dashboard_logs WHERE id = ? AND sync_code = ?').bind(id, syncCode).run();
       return json({ ok: true });
     }
   }

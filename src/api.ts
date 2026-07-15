@@ -122,6 +122,11 @@ export const api = {
     upsert: (sc: string, item: any) => apiFetch('/api/parenting/goals', { method: 'POST', body: JSON.stringify(item) }, sc),
     delete: (sc: string, id: string) => apiFetch(`/api/parenting/goals?id=${id}`, { method: 'DELETE' }, sc),
   },
+  dailyDashboard: {
+    list: (sc: string) => apiFetch('/api/parenting/dashboard', {}, sc),
+    upsert: (sc: string, item: any) => apiFetch('/api/parenting/dashboard', { method: 'POST', body: JSON.stringify(item) }, sc),
+    delete: (sc: string, id: string) => apiFetch(`/api/parenting/dashboard?id=${id}`, { method: 'DELETE' }, sc),
+  },
   growthLinks: {
     list: (sc: string) => apiFetch('/api/parenting/growth-links', {}, sc),
     upsert: (sc: string, item: any) => apiFetch('/api/parenting/growth-links', { method: 'POST', body: JSON.stringify(item) }, sc),

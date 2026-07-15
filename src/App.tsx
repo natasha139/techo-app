@@ -49,7 +49,8 @@ import {
   InboxItem,
   FitnessLog,
   ParentingResource,
-  PeriodLog
+  PeriodLog,
+  DailyDashboardLog
 } from './types';
 
 import {
@@ -398,6 +399,7 @@ export default function App() {
   const [fitnessLogs, setFitnessLogs] = useState<FitnessLog[]>([]);
   const [periodLogs, setPeriodLogs] = useState<PeriodLog[]>([]);
   const [parentingResources, setParentingResources] = useState<ParentingResource[]>([]);
+  const [dashboardLogs, setDashboardLogs] = useState<DailyDashboardLog[]>([]);
   const [childGoals, setChildGoals] = useState<any[]>([]);
   const [growthLinks, setGrowthLinks] = useState<any[]>([]);
   const [mediaNotes, setMediaNotes] = useState<any[]>([]);
@@ -428,6 +430,7 @@ export default function App() {
         cellData, habitData, summaryData, financeData,
         inboxData, fitnessData, parentingResourceData, settingsData,
         childGoalsData, growthLinksData, mediaNotesData, remindersData,
+        dashboardLogData,
       ] = await Promise.all([
         api.wishes.list(sc),
         api.skills.list(sc),
@@ -450,6 +453,7 @@ export default function App() {
         api.growthLinks.list(sc),
         api.mediaNotes.list(sc),
         api.reminders.list(sc),
+        api.dailyDashboard.list(sc),
       ]);
 
       setWishes(wishData.map((w: any) => ({ id: w.id, order: w.ord, content: w.content, isCompleted: w.is_completed === 1, category: w.category })));
@@ -468,6 +472,7 @@ export default function App() {
       setInboxItems(inboxData);
       setFitnessLogs(fitnessData);
       setParentingResources(parentingResourceData);
+      setDashboardLogs(dashboardLogData || []);
 
       // Batch 2: child goals, growth links, media notes
       setChildGoals((childGoalsData || []).map((g: any) => ({ ...g, done: g.is_done === 1 || g.done === true })));
@@ -876,6 +881,17 @@ export default function App() {
   const handleDeleteChildDiary = (id: string) => {
     setChildDiaries(prev => prev.filter(d => d.id !== id));
     apiCall(() => api.childDiaries.delete(syncCode, id), 'child_diaries');
+  };
+
+  const handleAddDashboardLog = (log: Omit<DailyDashboardLog, 'id'>) => {
+    const item: DailyDashboardLog = { ...log, id: `dd_${Date.now()}` };
+    setDashboardLogs(prev => [item, ...prev]);
+    apiCall(() => api.dailyDashboard.upsert(syncCode, item), 'daily_dashboard_logs');
+  };
+
+  const handleDeleteDashboardLog = (id: string) => {
+    setDashboardLogs(prev => prev.filter(l => l.id !== id));
+    apiCall(() => api.dailyDashboard.delete(syncCode, id), 'daily_dashboard_logs');
   };
 
   // 8. Diary

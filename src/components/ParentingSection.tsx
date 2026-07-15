@@ -19,8 +19,10 @@ import {
   Link2,
   Pencil,
   Paperclip,
+  Gauge,
+  BatteryMedium,
 } from 'lucide-react';
-import { ChildMilestone, ChildDiary, ChildDailyLog, ParentingResource, InboxAttachment } from '../types';
+import { ChildMilestone, ChildDiary, ChildDailyLog, ParentingResource, InboxAttachment, DailyDashboardLog } from '../types';
 import RichEditor, { sanitizeHtml } from './RichEditor';
 
 interface GrowthLink {
@@ -47,6 +49,9 @@ interface ParentingProps {
   growthLinks?: GrowthLink[];
   onAddGrowthLink?: (link: Omit<GrowthLink, 'id'>) => void;
   onDeleteGrowthLink?: (id: string) => void;
+  dashboardLogs?: DailyDashboardLog[];
+  onAddDashboardLog?: (log: Omit<DailyDashboardLog, 'id'>) => void;
+  onDeleteDashboardLog?: (id: string) => void;
 }
 
 const moodPresets = [
@@ -70,6 +75,32 @@ function getResourceTypeStyle(type: string) {
   return RESOURCE_TYPES.find(t => t.value === type)?.color ?? 'bg-gray-100 text-gray-700 border-gray-200';
 }
 
+const BATTERY_LEVELS = [20, 40, 60, 80, 100];
+const CHECKPOINT_OPTIONS = ['圈关键字', '数字清楚', '进退位检查', '答案回家', '握笔稳定', '情绪恢复'];
+
+function StarPicker({ value, onChange }: { value: number; onChange: (v: number) => void }) {
+  return (
+    <div className="flex gap-0.5">
+      {[1, 2, 3, 4, 5].map(s => (
+        <button type="button" key={s} onClick={() => onChange(s)}
+          className="cursor-pointer transition-opacity">
+          <Star size={13} className={s <= value ? 'fill-amber-400 text-amber-400' : 'text-gray-300'} />
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function StarDisplay({ value }: { value: number }) {
+  return (
+    <span className="flex gap-0.5">
+      {[1, 2, 3, 4, 5].map(s => (
+        <Star key={s} size={9} className={s <= value ? 'fill-amber-400 text-amber-400' : 'text-gray-200'} />
+      ))}
+    </span>
+  );
+}
+
 export default function ParentingSection({
   milestones,
   onAddMilestone,
@@ -87,9 +118,12 @@ export default function ParentingSection({
   growthLinks = [],
   onAddGrowthLink,
   onDeleteGrowthLink,
+  dashboardLogs = [],
+  onAddDashboardLog,
+  onDeleteDashboardLog,
 }: ParentingProps) {
 
-  const [subTab, setSubTab] = useState<'milestones' | 'diaries' | 'logs' | 'resources'>('milestones');
+  const [subTab, setSubTab] = useState<'milestones' | 'diaries' | 'logs' | 'resources' | 'dashboard'>('milestones');
 
   // Milestone input states
   const [mTitle, setMTitle] = useState('');
@@ -185,6 +219,45 @@ export default function ParentingSection({
     }
   };
 
+  // Daily Dashboard input states
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const [ddDate, setDdDate] = useState(todayStr);
+  const [ddMainTask, setDdMainTask] = useState('');
+  const [ddCheckpoint, setDdCheckpoint] = useState('圈关键字');
+  const [ddBattery, setDdBattery] = useState(60);
+  const [ddExecStartup, setDdExecStartup] = useState(3);
+  const [ddExecPersist, setDdExecPersist] = useState(3);
+  const [ddExecMemory, setDdExecMemory] = useState(3);
+  const [ddExecCheck, setDdExecCheck] = useState(3);
+  const [ddEmoMeltdown, setDdEmoMeltdown] = useState(3);
+  const [ddEmoRecovery, setDdEmoRecovery] = useState(3);
+  const [ddEmoComfort, setDdEmoComfort] = useState(3);
+  const [ddEmoBounce, setDdEmoBounce] = useState(3);
+  const [ddHabitKeywords, setDdHabitKeywords] = useState(false);
+  const [ddHabitNumbers, setDdHabitNumbers] = useState(false);
+  const [ddHabitCarry, setDdHabitCarry] = useState(false);
+  const [ddHabitAnswer, setDdHabitAnswer] = useState(false);
+  const [ddHabitRuler, setDdHabitRuler] = useState(false);
+  const [ddMomTime, setDdMomTime] = useState(3);
+  const [ddMomEmotion, setDdMomEmotion] = useState(3);
+  const [ddMomHappy, setDdMomHappy] = useState(3);
+  const [ddReflection1, setDdReflection1] = useState('');
+  const [ddReflection2, setDdReflection2] = useState('');
+  const [ddReflection3, setDdReflection3] = useState('');
+
+  const submitDashboard = (e: React.FormEvent) => {
+    e.preventDefault();
+    onAddDashboardLog?.({
+      date: ddDate, mainTask: ddMainTask.trim(), checkpoint: ddCheckpoint, battery: ddBattery,
+      execStartup: ddExecStartup, execPersist: ddExecPersist, execMemory: ddExecMemory, execCheck: ddExecCheck,
+      emoMeltdown: ddEmoMeltdown, emoRecovery: ddEmoRecovery, emoComfort: ddEmoComfort, emoBounce: ddEmoBounce,
+      habitKeywords: ddHabitKeywords, habitNumbers: ddHabitNumbers, habitCarry: ddHabitCarry, habitAnswer: ddHabitAnswer, habitRuler: ddHabitRuler,
+      momTime: ddMomTime, momEmotion: ddMomEmotion, momHappy: ddMomHappy,
+      reflection1: ddReflection1.trim(), reflection2: ddReflection2.trim(), reflection3: ddReflection3.trim(),
+    });
+    setDdMainTask(''); setDdReflection1(''); setDdReflection2(''); setDdReflection3('');
+  };
+
   const submitDiary = (e: React.FormEvent) => {
     e.preventDefault();
     if (dTitle.trim() && dContent.trim()) {
@@ -251,6 +324,18 @@ export default function ParentingSection({
           >
             <Library size={13} />
             <span>学习资源库</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setSubTab('dashboard')}
+            className={`px-4 py-2 text-xs font-bold rounded-t-lg transition-all border-t-2 border-x flex items-center gap-1.5 cursor-pointer ${
+              subTab === 'dashboard'
+                ? 'bg-white border-techo-pink text-techo-pink font-extrabold shadow-xxs pb-2.5 z-10'
+                : 'bg-gray-100/70 border-transparent text-gray-500 hover:bg-gray-100 hover:text-gray-700'
+            }`}
+          >
+            <Gauge size={13} />
+            <span>每日仪表盘</span>
           </button>
         </div>
         <div className="text-[10px] text-gray-400 font-mono hidden sm:block">KOKUYO TECHO PARENTING</div>

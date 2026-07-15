@@ -170,6 +170,34 @@ export interface PeriodLog {
   date: string; // "2026-06-19"
 }
 
+// 小树每日成长仪表盘
+export interface DailyDashboardLog {
+  id: string;
+  date: string;          // "2026-07-10"
+  mainTask: string;      // 今日主任务
+  checkpoint: string;    // 今日唯一 Checkpoint
+  battery: number;       // 20/40/60/80/100
+  execStartup: number;   // 执行功能：启动 1-5
+  execPersist: number;   // 持续
+  execMemory: number;    // 工作记忆
+  execCheck: number;     // 自我检查
+  emoMeltdown: number;   // 情绪调节：崩溃频率 1-5
+  emoRecovery: number;   // 恢复速度
+  emoComfort: number;    // 接受安慰
+  emoBounce: number;     // 勇敢回来
+  habitKeywords: boolean; // 学习习惯：圈关键字
+  habitNumbers: boolean;  // 数字清楚
+  habitCarry: boolean;    // 进退位检查
+  habitAnswer: boolean;   // 答案回家
+  habitRuler: boolean;    // 用尺子
+  momTime: number;       // 妈妈负荷：时间压力 1-5
+  momEmotion: number;    // 情绪消耗
+  momHappy: number;      // 今天有没有快乐时刻
+  reflection1: string;   // 值得看见的进步
+  reflection2: string;   // 最大触发点
+  reflection3: string;   // 明天只优化一件事
+}
+
 // 育儿资源条目 (工具/书籍/App)
 export interface ParentingResource {
   id: string;
