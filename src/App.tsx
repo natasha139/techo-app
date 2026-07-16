@@ -1880,6 +1880,9 @@ export default function App() {
                 growthLinks={growthLinks}
                 onAddGrowthLink={handleAddGrowthLink}
                 onDeleteGrowthLink={handleDeleteGrowthLink}
+                dashboardLogs={dashboardLogs}
+                onAddDashboardLog={handleAddDashboardLog}
+                onDeleteDashboardLog={handleDeleteDashboardLog}
               />
             )}
 
