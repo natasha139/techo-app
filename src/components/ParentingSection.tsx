@@ -244,6 +244,24 @@ export default function ParentingSection({
   const [ddReflection1, setDdReflection1] = useState('');
   const [ddReflection2, setDdReflection2] = useState('');
   const [ddReflection3, setDdReflection3] = useState('');
+  const [ddOverallStatus, setDdOverallStatus] = useState('平稳');
+  const [ddTriggers, setDdTriggers] = useState<string[]>([]);
+  const [ddTriggerOther, setDdTriggerOther] = useState('');
+  const [ddMeltdownCount, setDdMeltdownCount] = useState('没有');
+  const [ddMeltdownIntensity, setDdMeltdownIntensity] = useState('1 轻微波动');
+  const [ddMeltdownPhrase, setDdMeltdownPhrase] = useState('没有');
+  const [ddRecoveryTime, setDdRecoveryTime] = useState('5分钟内');
+  const [ddRecoveryHelper, setDdRecoveryHelper] = useState('自己');
+  const [ddRecoveryContinue, setDdRecoveryContinue] = useState('可以完整继续');
+  const [ddRecoveryQuality, setDdRecoveryQuality] = useState('恢复后投入很好');
+  const [ddEffectiveSupports, setDdEffectiveSupports] = useState<string[]>([]);
+
+  const toggleDdTrigger = (t: string) => {
+    setDdTriggers(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t]);
+  };
+  const toggleDdSupport = (s: string) => {
+    setDdEffectiveSupports(prev => prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s]);
+  };
 
   const submitDashboard = (e: React.FormEvent) => {
     e.preventDefault();
@@ -254,8 +272,13 @@ export default function ParentingSection({
       habitKeywords: ddHabitKeywords, habitNumbers: ddHabitNumbers, habitCarry: ddHabitCarry, habitAnswer: ddHabitAnswer, habitRuler: ddHabitRuler,
       momTime: ddMomTime, momEmotion: ddMomEmotion, momHappy: ddMomHappy,
       reflection1: ddReflection1.trim(), reflection2: ddReflection2.trim(), reflection3: ddReflection3.trim(),
+      overallStatus: ddOverallStatus, triggers: ddTriggers, triggerOther: ddTriggerOther.trim(),
+      meltdownCount: ddMeltdownCount, meltdownIntensity: ddMeltdownIntensity, meltdownPhrase: ddMeltdownPhrase,
+      recoveryTime: ddRecoveryTime, recoveryHelper: ddRecoveryHelper, recoveryContinue: ddRecoveryContinue, recoveryQuality: ddRecoveryQuality,
+      effectiveSupports: ddEffectiveSupports,
     });
     setDdMainTask(''); setDdReflection1(''); setDdReflection2(''); setDdReflection3('');
+    setDdTriggers([]); setDdTriggerOther(''); setDdEffectiveSupports([]);
   };
 
   const submitDiary = (e: React.FormEvent) => {
@@ -867,6 +890,30 @@ export default function ParentingSection({
                       placeholder="今天最重要的一件事"
                       className="w-full bg-white border border-[#c2bdae] p-2 rounded text-xs focus:outline-none focus:ring-1 focus:ring-pink-400" />
                   </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-[10px] font-bold text-gray-500 mb-1">今天整体状态</label>
+                    <select value={ddOverallStatus} onChange={e => setDdOverallStatus(e.target.value)}
+                      className="w-full bg-white border border-[#c2bdae] p-2 rounded text-xs focus:outline-none focus:ring-1 focus:ring-pink-400">
+                      {['平稳', '略有波动', '明显波动', '多次情绪淹没'].map(o => <option key={o} value={o}>{o}</option>)}
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold text-gray-500 mb-1.5">情绪触发器</label>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-2">
+                    {['写字', '口算', '重复性任务', '任务量太大', '等待或期待落空', '被批评或被催促', '临时变化', '同伴或课堂冲突'].map(t => (
+                      <label key={t} className="flex items-center gap-1.5 bg-white border border-[#c2bdae] rounded px-2.5 py-1.5 cursor-pointer text-[11px]">
+                        <input type="checkbox" checked={ddTriggers.includes(t)}
+                          onChange={e => setDdTriggers(prev => e.target.checked ? [...prev, t] : prev.filter(x => x !== t))}
+                          className="accent-[#d97d8c]" />
+                        {t}
+                      </label>
+                    ))}
+                  </div>
+                  <input type="text" value={ddTriggerOther} onChange={e => setDdTriggerOther(e.target.value)}
+                    placeholder="其他触发因素，例如：担心老师反馈、太累、太饿"
+                    className="w-full bg-white border border-[#c2bdae] p-2 rounded text-xs focus:outline-none focus:ring-1 focus:ring-pink-400" />
                 </div>
 
                 <div>
@@ -918,6 +965,75 @@ export default function ParentingSection({
                   <div>
                     <label className="block text-[10px] font-bold text-gray-500 mb-1">勇敢回来 ({ddEmoBounce})</label>
                     <input type="range" min="1" max="5" value={ddEmoBounce} onChange={e => setDdEmoBounce(Number(e.target.value))} className="w-full accent-[#d97d8c]" />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-[10px] font-bold text-gray-500 mb-1">明显情绪淹没次数</label>
+                    <select value={ddMeltdownCount} onChange={e => setDdMeltdownCount(e.target.value)}
+                      className="w-full bg-white border border-[#c2bdae] p-2 rounded text-xs focus:outline-none focus:ring-1 focus:ring-pink-400">
+                      {['没有', '有一次', '有两次', '三次及以上'].map(o => <option key={o} value={o}>{o}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-gray-500 mb-1">最高强度</label>
+                    <select value={ddMeltdownIntensity} onChange={e => setDdMeltdownIntensity(e.target.value)}
+                      className="w-full bg-white border border-[#c2bdae] p-2 rounded text-xs focus:outline-none focus:ring-1 focus:ring-pink-400">
+                      {['1 轻微波动', '2 明显烦躁', '3 哭泣或争执', '4 长时间失控', '5 完全被情绪淹没'].map(o => <option key={o} value={o}>{o}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-gray-500 mb-1">反复说"我不行/我不想去"</label>
+                    <select value={ddMeltdownPhrase} onChange={e => setDdMeltdownPhrase(e.target.value)}
+                      className="w-full bg-white border border-[#c2bdae] p-2 rounded text-xs focus:outline-none focus:ring-1 focus:ring-pink-400">
+                      {['没有', '偶尔', '反复'].map(o => <option key={o} value={o}>{o}</option>)}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[10px] font-bold text-gray-500 mb-1">从高峰到可沟通用了多久</label>
+                    <select value={ddRecoveryTime} onChange={e => setDdRecoveryTime(e.target.value)}
+                      className="w-full bg-white border border-[#c2bdae] p-2 rounded text-xs focus:outline-none focus:ring-1 focus:ring-pink-400">
+                      {['5分钟内', '5–10分钟', '10–20分钟', '20–40分钟', '40分钟以上'].map(o => <option key={o} value={o}>{o}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-gray-500 mb-1">主要依靠谁恢复</label>
+                    <select value={ddRecoveryHelper} onChange={e => setDdRecoveryHelper(e.target.value)}
+                      className="w-full bg-white border border-[#c2bdae] p-2 rounded text-xs focus:outline-none focus:ring-1 focus:ring-pink-400">
+                      {['自己', '妈妈', '爸爸', '老师', '其他照护者', '多人共同帮助'].map(o => <option key={o} value={o}>{o}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-gray-500 mb-1">恢复后能否继续原任务</label>
+                    <select value={ddRecoveryContinue} onChange={e => setDdRecoveryContinue(e.target.value)}
+                      className="w-full bg-white border border-[#c2bdae] p-2 rounded text-xs focus:outline-none focus:ring-1 focus:ring-pink-400">
+                      {['可以完整继续', '可以继续一部分', '只能换任务', '今天无法继续'].map(o => <option key={o} value={o}>{o}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-gray-500 mb-1">恢复质量</label>
+                    <select value={ddRecoveryQuality} onChange={e => setDdRecoveryQuality(e.target.value)}
+                      className="w-full bg-white border border-[#c2bdae] p-2 rounded text-xs focus:outline-none focus:ring-1 focus:ring-pink-400">
+                      {['恢复后投入很好', '基本能继续', '仍然心不在焉', '表面停止哭但未真正恢复'].map(o => <option key={o} value={o}>{o}</option>)}
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold text-gray-500 mb-1.5">今天什么最有效</label>
+                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                    {['妈妈陪伴', '爸爸陪伴', '其他照护者陪伴', '拆分任务', 'Start Flow', 'Recovery Flow', '切换任务', '休息或活动身体', '老师鼓励', '孩子自己调整'].map(s => (
+                      <label key={s} className="flex items-center gap-1.5 bg-white border border-[#c2bdae] rounded px-2.5 py-1.5 cursor-pointer text-[11px]">
+                        <input type="checkbox" checked={ddEffectiveSupports.includes(s)}
+                          onChange={e => setDdEffectiveSupports(prev => e.target.checked ? [...prev, s] : prev.filter(x => x !== s))}
+                          className="accent-[#d97d8c]" />
+                        {s}
+                      </label>
+                    ))}
                   </div>
                 </div>
 
@@ -1002,6 +1118,27 @@ export default function ParentingSection({
                       </div>
                       {log.checkpoint && (
                         <p className="text-[10px] text-gray-400 mb-1">Checkpoint: {log.checkpoint}</p>
+                      )}
+                      {log.overallStatus && (
+                        <p className="text-[10px] text-gray-500 mb-1">整体状态: {log.overallStatus}</p>
+                      )}
+                      {((log.triggers && log.triggers.length > 0) || log.triggerOther) && (
+                        <p className="text-[10px] text-gray-500 mb-1">
+                          触发器: {[...(log.triggers ?? []), log.triggerOther].filter(Boolean).join('、')}
+                        </p>
+                      )}
+                      {(log.meltdownCount || log.meltdownIntensity || log.meltdownPhrase) && (
+                        <p className="text-[10px] text-gray-500 mb-1">
+                          情绪淹没: {[log.meltdownCount, log.meltdownIntensity, log.meltdownPhrase].filter(Boolean).join(' / ')}
+                        </p>
+                      )}
+                      {(log.recoveryTime || log.recoveryHelper || log.recoveryContinue || log.recoveryQuality) && (
+                        <p className="text-[10px] text-gray-500 mb-1">
+                          恢复: {[log.recoveryTime, log.recoveryHelper, log.recoveryContinue, log.recoveryQuality].filter(Boolean).join(' / ')}
+                        </p>
+                      )}
+                      {log.effectiveSupports && log.effectiveSupports.length > 0 && (
+                        <p className="text-[10px] text-gray-500 mb-1">最有效: {log.effectiveSupports.join('、')}</p>
                       )}
                       {(log.reflection1 || log.reflection2 || log.reflection3) && (
                         <div className="text-[10px] text-gray-500 space-y-0.5 mt-1.5 pt-1.5 border-t border-[#f0ede4]">

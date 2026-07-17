@@ -196,6 +196,17 @@ export interface DailyDashboardLog {
   reflection1: string;   // 值得看见的进步
   reflection2: string;   // 最大触发点
   reflection3: string;   // 明天只优化一件事
+  overallStatus: string;      // 今天整体状态：平稳/略有波动/明显波动/多次情绪淹没
+  triggers: string[];         // 情绪触发器（多选）
+  triggerOther: string;       // 其他触发因素
+  meltdownCount: string;      // 今天是否出现明显情绪淹没：没有/有一次/有两次/三次及以上
+  meltdownIntensity: string;  // 最高强度
+  meltdownPhrase: string;     // 是否反复说"我不行"：没有/偶尔/反复
+  recoveryTime: string;       // 从高峰到可以沟通用了多久
+  recoveryHelper: string;     // 主要依靠谁恢复
+  recoveryContinue: string;   // 恢复后能否继续原任务
+  recoveryQuality: string;    // 恢复质量
+  effectiveSupports: string[]; // 今天什么最有效（多选）
 }
 
 // 育儿资源条目 (工具/书籍/App)

@@ -58,6 +58,23 @@ async function initSchemas(env) {
     `CREATE TABLE IF NOT EXISTS daily_dashboard_logs (id TEXT PRIMARY KEY, sync_code TEXT NOT NULL, date TEXT NOT NULL DEFAULT '', main_task TEXT NOT NULL DEFAULT '', checkpoint TEXT NOT NULL DEFAULT '', battery INTEGER NOT NULL DEFAULT 0, exec_startup INTEGER NOT NULL DEFAULT 0, exec_persist INTEGER NOT NULL DEFAULT 0, exec_memory INTEGER NOT NULL DEFAULT 0, exec_check INTEGER NOT NULL DEFAULT 0, emo_meltdown INTEGER NOT NULL DEFAULT 0, emo_recovery INTEGER NOT NULL DEFAULT 0, emo_comfort INTEGER NOT NULL DEFAULT 0, emo_bounce INTEGER NOT NULL DEFAULT 0, habit_keywords INTEGER NOT NULL DEFAULT 0, habit_numbers INTEGER NOT NULL DEFAULT 0, habit_carry INTEGER NOT NULL DEFAULT 0, habit_answer INTEGER NOT NULL DEFAULT 0, habit_ruler INTEGER NOT NULL DEFAULT 0, mom_time INTEGER NOT NULL DEFAULT 0, mom_emotion INTEGER NOT NULL DEFAULT 0, mom_happy INTEGER NOT NULL DEFAULT 0, reflection1 TEXT NOT NULL DEFAULT '', reflection2 TEXT NOT NULL DEFAULT '', reflection3 TEXT NOT NULL DEFAULT '', updated_at TEXT NOT NULL)`,
   ];
   for (const sql of pTables) await p.exec(sql);
+  // Migration: add new dashboard columns if they don't exist yet
+  const dashboardMigrations = [
+    `ALTER TABLE daily_dashboard_logs ADD COLUMN overall_status TEXT NOT NULL DEFAULT ''`,
+    `ALTER TABLE daily_dashboard_logs ADD COLUMN triggers TEXT NOT NULL DEFAULT '[]'`,
+    `ALTER TABLE daily_dashboard_logs ADD COLUMN trigger_other TEXT NOT NULL DEFAULT ''`,
+    `ALTER TABLE daily_dashboard_logs ADD COLUMN meltdown_count TEXT NOT NULL DEFAULT ''`,
+    `ALTER TABLE daily_dashboard_logs ADD COLUMN meltdown_intensity TEXT NOT NULL DEFAULT ''`,
+    `ALTER TABLE daily_dashboard_logs ADD COLUMN meltdown_phrase TEXT NOT NULL DEFAULT ''`,
+    `ALTER TABLE daily_dashboard_logs ADD COLUMN recovery_time TEXT NOT NULL DEFAULT ''`,
+    `ALTER TABLE daily_dashboard_logs ADD COLUMN recovery_helper TEXT NOT NULL DEFAULT ''`,
+    `ALTER TABLE daily_dashboard_logs ADD COLUMN recovery_continue TEXT NOT NULL DEFAULT ''`,
+    `ALTER TABLE daily_dashboard_logs ADD COLUMN recovery_quality TEXT NOT NULL DEFAULT ''`,
+    `ALTER TABLE daily_dashboard_logs ADD COLUMN effective_supports TEXT NOT NULL DEFAULT '[]'`,
+  ];
+  for (const sql of dashboardMigrations) {
+    try { await p.exec(sql); } catch (_) { /* already exists */ }
+  }
 
   const g = env.GENERAL_DB;
   const gTables = [
@@ -342,6 +359,10 @@ async function handleParenting(request, env, path, method, syncCode) {
         habitAnswer: r.habit_answer === 1, habitRuler: r.habit_ruler === 1,
         momTime: r.mom_time, momEmotion: r.mom_emotion, momHappy: r.mom_happy,
         reflection1: r.reflection1, reflection2: r.reflection2, reflection3: r.reflection3,
+        overallStatus: r.overall_status ?? '', triggers: JSON.parse(r.triggers ?? '[]'), triggerOther: r.trigger_other ?? '',
+        meltdownCount: r.meltdown_count ?? '', meltdownIntensity: r.meltdown_intensity ?? '', meltdownPhrase: r.meltdown_phrase ?? '',
+        recoveryTime: r.recovery_time ?? '', recoveryHelper: r.recovery_helper ?? '', recoveryContinue: r.recovery_continue ?? '', recoveryQuality: r.recovery_quality ?? '',
+        effectiveSupports: JSON.parse(r.effective_supports ?? '[]'),
       })));
     }
     if (method === 'POST') {
@@ -352,14 +373,22 @@ async function handleParenting(request, env, path, method, syncCode) {
         emo_meltdown, emo_recovery, emo_comfort, emo_bounce,
         habit_keywords, habit_numbers, habit_carry, habit_answer, habit_ruler,
         mom_time, mom_emotion, mom_happy,
-        reflection1, reflection2, reflection3, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).bind(
+        reflection1, reflection2, reflection3,
+        overall_status, triggers, trigger_other,
+        meltdown_count, meltdown_intensity, meltdown_phrase,
+        recovery_time, recovery_helper, recovery_continue, recovery_quality,
+        effective_supports, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).bind(
         b.id, syncCode, b.date ?? '', b.mainTask ?? '', b.checkpoint ?? '', b.battery ?? 0,
         b.execStartup ?? 0, b.execPersist ?? 0, b.execMemory ?? 0, b.execCheck ?? 0,
         b.emoMeltdown ?? 0, b.emoRecovery ?? 0, b.emoComfort ?? 0, b.emoBounce ?? 0,
         b.habitKeywords ? 1 : 0, b.habitNumbers ? 1 : 0, b.habitCarry ? 1 : 0, b.habitAnswer ? 1 : 0, b.habitRuler ? 1 : 0,
         b.momTime ?? 0, b.momEmotion ?? 0, b.momHappy ?? 0,
-        b.reflection1 ?? '', b.reflection2 ?? '', b.reflection3 ?? '', now()
+        b.reflection1 ?? '', b.reflection2 ?? '', b.reflection3 ?? '',
+        b.overallStatus ?? '', JSON.stringify(b.triggers ?? []), b.triggerOther ?? '',
+        b.meltdownCount ?? '', b.meltdownIntensity ?? '', b.meltdownPhrase ?? '',
+        b.recoveryTime ?? '', b.recoveryHelper ?? '', b.recoveryContinue ?? '', b.recoveryQuality ?? '',
+        JSON.stringify(b.effectiveSupports ?? []), now()
       ).run();
       return json({ ok: true });
     }
