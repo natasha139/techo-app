@@ -192,7 +192,7 @@ export default function RichEditor({
   function handleDrop(e: React.DragEvent<HTMLDivElement>) {
     e.preventDefault();
     setIsDragOver(false);
-    const file = Array.from(e.dataTransfer.files).find(f => f.type.startsWith('image/'));
+    const file = Array.from<File>(e.dataTransfer.files).find(f => f.type.startsWith('image/'));
     if (file) processImageFile(file);
   }
 

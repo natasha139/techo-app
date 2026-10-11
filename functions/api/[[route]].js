@@ -1,3 +1,5 @@
+import { handleWeread } from '../../server/weread.mjs';
+
 // Techo API - Cloudflare Pages Functions
 
 const CORS = {
@@ -599,6 +601,8 @@ export async function onRequest(context) {
   if (!syncCode) return err('缺少同步码', 401);
   const user = await env.SELF_GROWTH_DB.prepare('SELECT sync_code FROM users WHERE sync_code = ?').bind(syncCode).first();
   if (!user) return err('同步码无效', 401);
+
+  if (path.startsWith('/api/weread/')) return handleWeread(request, env, syncCode);
 
   if (path.startsWith('/api/self-growth')) return handleSelfGrowth(request, env, path, method, syncCode);
   if (path.startsWith('/api/parenting')) return handleParenting(request, env, path, method, syncCode);

@@ -1,3 +1,4 @@
+import WeReadSection from './components/WeReadSection';
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
@@ -1840,12 +1841,15 @@ export default function App() {
             )}
 
             {activeTab === 'hobby' && (
+              <>
+              <WeReadSection syncCode={syncCode} />
               <HobbiesSection
                 items={hobbies}
                 onAddItem={handleAddHobby}
                 onUpdateItem={handleUpdateHobby}
                 onDeleteItem={handleDeleteHobby}
               />
+              </>
             )}
 
             {activeTab === 'media' && (

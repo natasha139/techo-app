@@ -552,7 +552,7 @@ export default function BabyTechoGrid({
         {/* Grid — only active hours */}
         {(() => {
           const activeHours = Array.from(
-            new Set(renderedCells.map(c => {
+            new Set<number>(renderedCells.map(c => {
               const parts = c.id.split('-');
               return Number(parts[parts.length - 1]);
             }))
