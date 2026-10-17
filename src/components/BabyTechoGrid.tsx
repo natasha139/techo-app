@@ -40,6 +40,9 @@ const colorPresets = [
   { label: '金', bg: '#fef9c3', border: '#ca8a04', textClass: 'text-yellow-900' },
 ];
 
+const timeOptions = Array.from({ length: 48 }, (_, i) => i / 2);
+const formatTime = (hour: number) => `${String(Math.floor(hour)).padStart(2, '0')}:${hour % 1 ? '30' : '00'}`;
+
 type TodoItem = { text: string; done: boolean };
 type BabyDailyNote = {
   morning: TodoItem[];
@@ -143,7 +146,7 @@ function buildPrintHtml(
   ).join('');
 
   const rows = hours.map(hour => {
-    const hourLabel = `<td style="width:4%;text-align:center;font-size:9px;font-weight:700;color:${hour >= 6 && hour <= 21 ? '#8c8577' : '#c4c0b8'};border:1px solid #eae6d8;padding:1px;">${String(hour).padStart(2, '0')}</td>`;
+    const hourLabel = `<td style="width:4%;text-align:center;font-size:9px;font-weight:700;color:${hour >= 6 && hour <= 21 ? '#8c8577' : '#c4c0b8'};border:1px solid #eae6d8;padding:1px;">${formatTime(hour)}</td>`;
     const dayCells = days.map((_, dayIdx) => {
       const cell = cells.find(c => c.id.endsWith(`-${dayIdx}-${hour}`));
       const bg = cell ? cell.color : 'transparent';
@@ -249,9 +252,7 @@ export default function BabyTechoGrid({
   const [editColorIdx, setEditColorIdx] = useState(0);
   const [showCopyPicker, setShowCopyPicker] = useState(false);
   const [copyTarget, setCopyTarget] = useState<{ dayIndex: number; hour: number }>({ dayIndex: 0, hour: 8 });
-  const [showAddPicker, setShowAddPicker] = useState(false);
-  const [addPickerDay, setAddPickerDay] = useState(0);
-  const [addPickerHour, setAddPickerHour] = useState(8);
+  const [isNewSlot, setIsNewSlot] = useState(false);
 
   const [cellFontSize, setCellFontSize] = useState<number>(() => {
     const saved = localStorage.getItem('babygrid-fontsize');
@@ -273,6 +274,8 @@ export default function BabyTechoGrid({
           text: s.startsWith('[x]') ? s.slice(3) : s,
         }))
       : [{ text: '', done: false }];
+    setIsNewSlot(!existing);
+    setShowCopyPicker(false);
     setEditItems(items.length ? items : [{ text: '', done: false }]);
     setEditColorIdx(existing?.color ? colorPresets.findIndex(cp => cp.bg === existing.color) : 0);
     setEditingSlot({ dayIndex: dayIdx, hour });
@@ -280,10 +283,12 @@ export default function BabyTechoGrid({
 
   const saveCell = () => {
     if (!editingSlot) return;
+    if (isNewSlot && renderedCells.some(c => c.id.endsWith(`-${editingSlot.dayIndex}-${editingSlot.hour}`))) return;
     const joined = editItems
       .filter(it => it.text.trim())
       .map(it => (it.done ? '[x]' : '') + it.text.trim())
       .join('\n');
+    if (isNewSlot && !joined) return;
     if (joined) {
       onSaveCell(editingSlot.dayIndex, editingSlot.hour, joined, colorPresets[editColorIdx >= 0 ? editColorIdx : 0].bg);
     } else {
@@ -561,7 +566,7 @@ export default function BabyTechoGrid({
           return (
             <div ref={hourScrollRef} className="print:overflow-visible">
               {activeHours.length === 0 && (
-                <div className="py-8 text-center text-[11px] text-gray-400">还没有计划，点下方「+ 新增时段」开始添加</div>
+                <div className="py-8 text-center text-[11px] text-gray-400">还没有计划，点下方「+ 新增计划」开始添加</div>
               )}
               {(() => {
                 const SECTION_DIVIDERS = [
@@ -661,7 +666,7 @@ export default function BabyTechoGrid({
                         <div className={`col-span-1 border-r border-[#eae6d8] flex items-center justify-center text-[9px] font-mono font-bold select-none py-1 ${
                           hour >= 6 && hour <= 21 ? 'text-[#8c8577]' : 'text-[#c4c0b8]'
                         }`}>
-                          {String(hour).padStart(2, '0')}
+                          {formatTime(hour)}
                         </div>
                         {daysOfWeek.map((day, dayIdx) => {
                           const cell = renderedCells.find(c => c.id.endsWith(`-${dayIdx}-${hour}`));
@@ -697,51 +702,10 @@ export default function BabyTechoGrid({
 
               {/* Add new hour slot */}
               <div className="px-3 py-2 border-t border-[#eae6d8]">
-                {!showAddPicker ? (
-                  <button
-                    type="button"
-                    onClick={() => setShowAddPicker(true)}
-                    className="text-[10px] text-pink-400 hover:text-pink-600 cursor-pointer flex items-center gap-1"
-                  >
-                    <Plus size={11} /> 新增时段
-                  </button>
-                ) : (
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-[10px] text-gray-500">选择日期和时段：</span>
-                    <select
-                      value={addPickerDay}
-                      onChange={e => setAddPickerDay(Number(e.target.value))}
-                      className="border border-pink-200 rounded px-1.5 py-0.5 text-xs focus:outline-none bg-white"
-                    >
-                      {daysOfWeek.map((d, i) => (
-                        <option key={i} value={i}>{d.text} {d.dateStr}</option>
-                      ))}
-                    </select>
-                    <select
-                      value={addPickerHour}
-                      onChange={e => setAddPickerHour(Number(e.target.value))}
-                      className="border border-pink-200 rounded px-1.5 py-0.5 text-xs focus:outline-none bg-white"
-                    >
-                      {Array.from({ length: 24 }, (_, i) => (
-                        <option key={i} value={i}>{String(i).padStart(2, '0')}:00</option>
-                      ))}
-                    </select>
-                    <button
-                      type="button"
-                      onClick={() => { setShowAddPicker(false); openCell(addPickerDay, addPickerHour); }}
-                      className="text-[10px] font-bold text-white bg-pink-400 hover:bg-pink-500 rounded px-2 py-0.5 cursor-pointer"
-                    >
-                      添加
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setShowAddPicker(false)}
-                      className="text-[10px] text-gray-400 hover:text-gray-600 cursor-pointer"
-                    >
-                      取消
-                    </button>
-                  </div>
-                )}
+                <button type="button" onClick={() => openCell((new Date().getDay() + 6) % 7, 8)}
+                  className="text-xs text-pink-500 hover:text-pink-700 cursor-pointer flex items-center gap-1 py-1">
+                  <Plus size={13} /> 新增计划
+                </button>
               </div>
             </div>
           );
@@ -813,10 +777,27 @@ export default function BabyTechoGrid({
           <div className="bg-white rounded-xl shadow-xl border border-pink-200 p-5 w-80 space-y-3 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between">
               <h4 className="text-sm font-bold text-[#c06080]">
-                🌱 {daysOfWeek[editingSlot.dayIndex].text} {String(editingSlot.hour).padStart(2, '0')}:00
+                🌱 {isNewSlot ? '新增计划' : `${daysOfWeek[editingSlot.dayIndex].text} ${formatTime(editingSlot.hour)}`}
               </h4>
               <button onClick={() => setEditingSlot(null)} className="text-gray-400 hover:text-gray-600 text-xs cursor-pointer">✕</button>
             </div>
+            {isNewSlot && (
+              <div className="grid grid-cols-2 gap-2">
+                <label className="text-xs text-gray-500">日期
+                  <select aria-label="计划日期" value={editingSlot.dayIndex} onChange={e => setEditingSlot({ ...editingSlot, dayIndex: Number(e.target.value) })} className="mt-1 w-full border border-pink-200 rounded p-2 bg-white text-gray-700">
+                    {daysOfWeek.map((d, i) => <option key={i} value={i}>{d.text} {d.dateStr}</option>)}
+                  </select>
+                </label>
+                <label className="text-xs text-gray-500">开始时间
+                  <select aria-label="开始时间" value={editingSlot.hour} onChange={e => setEditingSlot({ ...editingSlot, hour: Number(e.target.value) })} className="mt-1 w-full border border-pink-200 rounded p-2 bg-white text-gray-700">
+                    {timeOptions.map(hour => <option key={hour} value={hour}>{formatTime(hour)}</option>)}
+                  </select>
+                </label>
+              </div>
+            )}
+            {isNewSlot && renderedCells.some(c => c.id.endsWith(`-${editingSlot.dayIndex}-${editingSlot.hour}`)) && (
+              <p role="alert" className="text-xs text-amber-700">这个时间已有计划，请选择其他时间，或关闭后点击原计划编辑。</p>
+            )}
             <div className="space-y-1.5">
               {editItems.map((item, i) => (
                 <div key={i} className="flex gap-1 items-center">
@@ -839,7 +820,8 @@ export default function BabyTechoGrid({
                       next[i] = { ...next[i], text: e.target.value };
                       setEditItems(next);
                     }}
-                    placeholder={`第 ${i + 1} 项...`}
+                    placeholder={i === 0 ? '做什么？例如：篮球训练' : '再添加一项活动'}
+                    onKeyDown={e => { if (!e.nativeEvent.isComposing && e.key === 'Enter' && (e.metaKey || e.ctrlKey)) saveCell(); }}
                     autoFocus={i === 0}
                     className={`flex-1 border border-pink-200 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-pink-300 font-sans ${item.done ? 'line-through text-gray-400' : ''}`}
                   />
@@ -876,7 +858,7 @@ export default function BabyTechoGrid({
               </div>
             </div>
             <div className="flex gap-2">
-              {renderedCells.find(c => c.id.endsWith(`-${editingSlot.dayIndex}-${editingSlot.hour}`)) && (
+              {!isNewSlot && renderedCells.find(c => c.id.endsWith(`-${editingSlot.dayIndex}-${editingSlot.hour}`)) && (
                 <>
                   <button
                     onClick={() => { onClearCell(editingSlot.dayIndex, editingSlot.hour); setEditingSlot(null); }}
@@ -894,7 +876,7 @@ export default function BabyTechoGrid({
                   )}
                 </>
               )}
-              <button onClick={saveCell} className="flex-1 py-2 text-xs font-bold bg-[#c06080] text-white rounded-lg hover:bg-[#a04060] cursor-pointer">
+              <button disabled={isNewSlot && (editItems.every(it => !it.text.trim()) || renderedCells.some(c => c.id.endsWith(`-${editingSlot.dayIndex}-${editingSlot.hour}`)))} onClick={saveCell} className="disabled:opacity-40 flex-1 py-2 text-xs font-bold bg-[#c06080] text-white rounded-lg hover:bg-[#a04060] cursor-pointer">
                 保存
               </button>
             </div>
@@ -916,8 +898,8 @@ export default function BabyTechoGrid({
                     onChange={e => setCopyTarget(prev => ({ ...prev, hour: Number(e.target.value) }))}
                     className="flex-1 border border-blue-200 rounded px-2 py-1 text-xs focus:outline-none bg-white"
                   >
-                    {Array.from({ length: 24 }, (_, i) => (
-                      <option key={i} value={i}>{String(i).padStart(2, '0')}:00</option>
+                    {timeOptions.map(hour => (
+                      <option key={hour} value={hour}>{formatTime(hour)}</option>
                     ))}
                   </select>
                 </div>
