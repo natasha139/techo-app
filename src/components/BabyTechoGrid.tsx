@@ -18,7 +18,7 @@ interface BabyTechoGridProps {
   onToggleChildGoal?: (id: string) => void;
   onDeleteChildGoal?: (id: string) => void;
   onEditChildGoal?: (id: string, text: string) => void;
-  onCopyCell?: (fromDayIndex: number, fromHour: number, toDayIndex: number, toHour: number) => void;
+  onCopyCell?: (toWeekOffset: number, toDayIndex: number, toHour: number, repeatWeeks: number, text: string, color: string) => { copied: number; skipped: number };
 }
 
 const colorPresets = [
@@ -251,7 +251,9 @@ export default function BabyTechoGrid({
   const [editItems, setEditItems] = useState<{ text: string; done: boolean }[]>([{ text: '', done: false }]);
   const [editColorIdx, setEditColorIdx] = useState(0);
   const [showCopyPicker, setShowCopyPicker] = useState(false);
-  const [copyTarget, setCopyTarget] = useState<{ dayIndex: number; hour: number }>({ dayIndex: 0, hour: 8 });
+  const [copyTarget, setCopyTarget] = useState({ dayIndex: 0, hour: 8, weekOffset, repeatWeeks: 1 });
+  const [copyResult, setCopyResult] = useState('');
+  const copyDays = getCurrentWeekDays(copyTarget.weekOffset);
   const [isNewSlot, setIsNewSlot] = useState(false);
 
   const [cellFontSize, setCellFontSize] = useState<number>(() => {
@@ -276,6 +278,8 @@ export default function BabyTechoGrid({
       : [{ text: '', done: false }];
     setIsNewSlot(!existing);
     setShowCopyPicker(false);
+    setCopyResult('');
+    setCopyTarget({ dayIndex: dayIdx, hour, weekOffset: weekOffset + 1, repeatWeeks: 1 });
     setEditItems(items.length ? items : [{ text: '', done: false }]);
     setEditColorIdx(existing?.color ? colorPresets.findIndex(cp => cp.bg === existing.color) : 0);
     setEditingSlot({ dayIndex: dayIdx, hour });
@@ -882,14 +886,19 @@ export default function BabyTechoGrid({
             </div>
             {showCopyPicker && onCopyCell && (
               <div className="border border-blue-200 rounded-lg p-3 bg-blue-50 space-y-2">
-                <p className="text-[10px] font-bold text-blue-600">复制到哪一天的哪个时段？</p>
+                <p className="text-xs font-bold text-blue-600">复制到其他日期 / 每周重复</p>
+                <div className="flex items-center gap-2 text-xs">
+                  <button type="button" aria-label="复制目标上一周" onClick={() => setCopyTarget(p => ({ ...p, weekOffset: p.weekOffset - 1 }))} className="border border-blue-200 rounded px-2 py-1 bg-white">上一周</button>
+                  <span className="flex-1 text-center">{copyDays[0].dateStr} — {copyDays[6].dateStr}</span>
+                  <button type="button" aria-label="复制目标下一周" onClick={() => setCopyTarget(p => ({ ...p, weekOffset: p.weekOffset + 1 }))} className="border border-blue-200 rounded px-2 py-1 bg-white">下一周</button>
+                </div>
                 <div className="flex gap-2">
                   <select
                     value={copyTarget.dayIndex}
                     onChange={e => setCopyTarget(prev => ({ ...prev, dayIndex: Number(e.target.value) }))}
                     className="flex-1 border border-blue-200 rounded px-2 py-1 text-xs focus:outline-none bg-white"
                   >
-                    {daysOfWeek.map((d, i) => (
+                    {copyDays.map((d, i) => (
                       <option key={i} value={i}>{d.text} {d.dateStr}</option>
                     ))}
                   </select>
@@ -903,15 +912,25 @@ export default function BabyTechoGrid({
                     ))}
                   </select>
                 </div>
+                <label className="flex items-center justify-between gap-2 text-xs text-blue-700">重复
+                  <select aria-label="每周复制次数" value={copyTarget.repeatWeeks} onChange={e => setCopyTarget(p => ({ ...p, repeatWeeks: Number(e.target.value) }))} className="border border-blue-200 rounded px-2 py-1 bg-white">
+                    {[1, 4, 8, 12].map(n => <option key={n} value={n}>{n === 1 ? '仅这一次' : `每周一次，共 ${n} 次`}</option>)}
+                  </select>
+                </label>
+                <p className="text-[10px] text-blue-600">从所选周开始复制，已有计划的时段会跳过。复制当前填写的内容，完成状态会重置。</p>
                 <button
+                  disabled={editItems.every(item => !item.text.trim())}
                   onClick={() => {
-                    onCopyCell(editingSlot.dayIndex, editingSlot.hour, copyTarget.dayIndex, copyTarget.hour);
-                    setShowCopyPicker(false);
+                    const text = editItems.filter(item => item.text.trim()).map(item => item.text.trim()).join('\n');
+                    if (!text) return;
+                    const result = onCopyCell(copyTarget.weekOffset, copyTarget.dayIndex, copyTarget.hour, copyTarget.repeatWeeks, text, colorPresets[editColorIdx >= 0 ? editColorIdx : 0].bg);
+                    setCopyResult(`已复制 ${result.copied} 条，跳过 ${result.skipped} 个已有计划的时段。`);
                   }}
                   className="w-full py-1.5 text-xs font-bold bg-blue-500 text-white rounded-lg hover:bg-blue-600 cursor-pointer"
                 >
                   确认复制
                 </button>
+                {copyResult && <p role="status" className="text-xs text-blue-700">{copyResult}</p>}
               </div>
             )}
           </div>

@@ -615,11 +615,22 @@ export default function App() {
       `DELETE FROM planner_cells WHERE id = '${id}'`);
   };
 
-  const handleCopyBabyCell = (fromDayIndex: number, fromHour: number, toDayIndex: number, toHour: number) => {
-    const fromId = `baby_${getWeekKey(weekOffset)}-${fromDayIndex}-${fromHour}`;
-    const source = babyCells.find(c => c.id === fromId);
-    if (!source) return;
-    handleSaveBabyCell(toDayIndex, toHour, source.text, source.color ?? '');
+  const handleCopyBabyCell = (toWeekOffset: number, toDayIndex: number, toHour: number, repeatWeeks: number, text: string, color: string) => {
+    const occupied = new Set(babyCells.map(cell => cell.id));
+    const items: PlannerCell[] = [];
+    let skipped = 0;
+    for (let i = 0; i < repeatWeeks; i++) {
+      const id = `baby_${getWeekKey(toWeekOffset + i)}-${toDayIndex}-${toHour}`;
+      if (occupied.has(id)) { skipped++; continue; }
+      occupied.add(id);
+      items.push({ id, text, color });
+    }
+    if (items.length) {
+      setBabyCells(prev => [...prev, ...items]);
+      items.forEach(item => apiCall(() => api.cells.upsert(syncCode, item), 'planner_cells (baby)',
+        `INSERT OR REPLACE INTO planner_cells (id, text, color) VALUES ('${item.id}', ...)`));
+    }
+    return { copied: items.length, skipped };
   };
 
   const handleSaveBabyTodayNote = (dayIndex: number, text: string) => {
