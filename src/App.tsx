@@ -1,3 +1,4 @@
+import { createWriteQueue } from './writeQueue';
 import WeReadSection from './components/WeReadSection';
 /**
  * @license
@@ -535,23 +536,33 @@ export default function App() {
   }, [syncCode, loadAllData]);
 
   // -- API MUTATION HELPERS --
-  const apiCall = useCallback(async (
-    operation: () => Promise<any>,
-    table: string,
-    sql?: string
-  ) => {
-    try {
-      await operation();
-      pushLog('query', `D1 ${table} 写入成功。`, sql);
-    } catch (e: any) {
-      pushLog('error', `D1 ${table} 写入失败: ${e.message}`);
-    }
+  const [writeStatus, setWriteStatus] = useState({pending:0,running:false,error:''});
+  const writeQueueRef = useRef<ReturnType<typeof createWriteQueue> | null>(null);
+  if (!writeQueueRef.current) writeQueueRef.current = createWriteQueue(setWriteStatus);
+  const apiCall = useCallback((operation: () => Promise<any>, table: string, sql?: string) => {
+    writeQueueRef.current!.enqueue(async () => {
+      try {
+        await operation();
+        pushLog('query', `D1 ${table} 写入成功。`, sql);
+      } catch (e: any) {
+        pushLog('error', `D1 ${table} 写入失败: ${e.message}`);
+        throw e;
+      }
+    });
   }, [pushLog]);
-
   const saveSetting = useCallback((key: string, value: string) => {
     if (!syncCode) return;
-    api.settings.set(syncCode, { [key]: value }).catch(() => {});
-  }, [syncCode]);
+    apiCall(() => api.settings.set(syncCode, { [key]: value }), 'settings');
+  }, [syncCode, apiCall]);
+  useEffect(() => {
+    const warn = (event: BeforeUnloadEvent) => {
+      if (writeQueueRef.current?.hasPending() || todayNotesDebounceRef.current) {
+        event.preventDefault(); event.returnValue='';
+      }
+    };
+    window.addEventListener('beforeunload',warn);
+    return () => window.removeEventListener('beforeunload',warn);
+  }, []);
 
   // -- TRIGGERS CRUD MUTATIONS --
 
@@ -588,6 +599,7 @@ export default function App() {
     // debounce 1s — today notes 高频输入，避免每次击键都写 D1
     if (todayNotesDebounceRef.current) clearTimeout(todayNotesDebounceRef.current);
     todayNotesDebounceRef.current = setTimeout(() => {
+      todayNotesDebounceRef.current = null;
       apiCall(() => api.weeklySummary.save(syncCode, { ...weeklySummary, todayNotes: updated, babyTodayNotes }), 'weekly_summary',
         `UPDATE weekly_summary SET today_notes = ? WHERE sync_code = ?`);
     }, 1000);
@@ -1077,6 +1089,7 @@ export default function App() {
     setIsSyncing(true);
     pushLog('info', '正在重新拉取 Cloudflare D1 最新数据...');
     try {
+      if (writeQueueRef.current?.hasPending() || todayNotesDebounceRef.current) throw new Error('还有改动未保存，请先重试保存再同步');
       await loadAllData(syncCode);
       pushLog('success', '✅ 数据同步完成。所有状态已更新为服务端最新值。');
     } catch (e: any) {
@@ -1088,6 +1101,7 @@ export default function App() {
 
   // -- AUTH HANDLER --
   const handleSyncLogin = (code: string, uname: string) => {
+    if (writeQueueRef.current?.hasPending()) { alert('请先重试保存当前改动，再切换账号。'); return; }
     localStorage.setItem('techo_sync_code', code);
     setUsername(uname);
     setSyncCode(code);
@@ -1112,6 +1126,9 @@ export default function App() {
 
   return (
     <>
+      {writeStatus.pending > 0 && <div role={writeStatus.error ? 'alert' : 'status'} className="fixed bottom-4 left-4 right-4 z-50 max-w-xl mx-auto bg-white border border-amber-600 rounded-lg p-4 shadow-lg text-sm text-stone-800">
+        {writeStatus.error ? <><strong>还有 {writeStatus.pending} 项改动未保存</strong><p>{writeStatus.error}</p><p>内容仍保留在当前页面，请先不要刷新或关闭。</p><button className="mt-2 underline font-bold" disabled={writeStatus.running} onClick={() => writeQueueRef.current?.retry()}>重试保存</button></> : <span>正在保存 {writeStatus.pending} 项改动…</span>}
+      </div>}
       {!syncCode && <SyncModal onSuccess={handleSyncLogin} />}
     <div
       style={themeStyles}
@@ -1250,7 +1267,7 @@ export default function App() {
                           className="w-full text-left p-1.5 hover:bg-[#fafaf3] rounded flex items-center gap-1.5 text-[#555047]">
                           <Key size={12} />复制同步码
                         </button>
-                        <button onClick={() => { localStorage.removeItem('techo_sync_code'); setSyncCode(''); setIsProfileOpen(false); }}
+                        <button onClick={() => { if (writeQueueRef.current?.hasPending() || todayNotesDebounceRef.current) { alert('还有未保存的改动，请先重试保存。'); return; } localStorage.removeItem('techo_sync_code'); setSyncCode(''); setIsProfileOpen(false); }}
                           className="w-full text-left p-1.5 hover:bg-rose-50 text-red-600 rounded flex items-center gap-1.5">
                           ✕ 退出登录
                         </button>
