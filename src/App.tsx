@@ -535,6 +535,9 @@ export default function App() {
     if (syncCode) loadAllData(syncCode);
   }, [syncCode, loadAllData]);
 
+  const weeklyPayloadRef = useRef<any>(null);
+  weeklyPayloadRef.current = { ...weeklySummary, todayNotes, babyTodayNotes };
+
   // -- API MUTATION HELPERS --
   const [writeStatus, setWriteStatus] = useState({pending:0,running:false,error:''});
   const writeQueueRef = useRef<ReturnType<typeof createWriteQueue> | null>(null);
@@ -556,7 +559,7 @@ export default function App() {
   }, [syncCode, apiCall]);
   useEffect(() => {
     const warn = (event: BeforeUnloadEvent) => {
-      if (writeQueueRef.current?.hasPending() || todayNotesDebounceRef.current) {
+      if (writeQueueRef.current?.hasPending() || todayNotesDebounceRef.current || babyTodayNotesDebounceRef.current) {
         event.preventDefault(); event.returnValue='';
       }
     };
@@ -596,18 +599,22 @@ export default function App() {
   const handleSaveTodayNote = (dayIndex: number, text: string) => {
     const updated = { ...todayNotes, [`${getWeekKey(weekOffset)}-${dayIndex}`]: text };
     setTodayNotes(updated);
+    weeklyPayloadRef.current = { ...weeklyPayloadRef.current, todayNotes: updated };
     // debounce 1s — today notes 高频输入，避免每次击键都写 D1
     if (todayNotesDebounceRef.current) clearTimeout(todayNotesDebounceRef.current);
     todayNotesDebounceRef.current = setTimeout(() => {
       todayNotesDebounceRef.current = null;
-      apiCall(() => api.weeklySummary.save(syncCode, { ...weeklySummary, todayNotes: updated, babyTodayNotes }), 'weekly_summary',
+      const payload = { ...weeklyPayloadRef.current };
+      apiCall(() => api.weeklySummary.save(syncCode, payload), 'weekly_summary',
         `UPDATE weekly_summary SET today_notes = ? WHERE sync_code = ?`);
     }, 1000);
   };
 
   const handleSaveWeeklySummary = (summary: WeeklySummary) => {
     setWeeklySummary(summary);
-    apiCall(() => api.weeklySummary.save(syncCode, { ...summary, todayNotes, babyTodayNotes }), 'weekly_summary',
+    const payload = { ...summary, todayNotes: weeklyPayloadRef.current.todayNotes, babyTodayNotes: weeklyPayloadRef.current.babyTodayNotes };
+    weeklyPayloadRef.current = payload;
+    apiCall(() => api.weeklySummary.save(syncCode, payload), 'weekly_summary',
       `INSERT OR REPLACE INTO weekly_summary (...) VALUES (...)`);
   };
 
@@ -648,9 +655,12 @@ export default function App() {
   const handleSaveBabyTodayNote = (dayIndex: number, text: string) => {
     const updated = { ...babyTodayNotes, [`${getWeekKey(weekOffset)}-${dayIndex}`]: text };
     setBabyTodayNotes(updated);
+    weeklyPayloadRef.current = { ...weeklyPayloadRef.current, babyTodayNotes: updated };
     if (babyTodayNotesDebounceRef.current) clearTimeout(babyTodayNotesDebounceRef.current);
     babyTodayNotesDebounceRef.current = setTimeout(() => {
-      apiCall(() => api.weeklySummary.save(syncCode, { ...weeklySummary, todayNotes, babyTodayNotes: updated }), 'weekly_summary');
+      babyTodayNotesDebounceRef.current = null;
+      const payload = { ...weeklyPayloadRef.current };
+      apiCall(() => api.weeklySummary.save(syncCode, payload), 'weekly_summary');
     }, 1000);
   };
 
@@ -1089,7 +1099,7 @@ export default function App() {
     setIsSyncing(true);
     pushLog('info', '正在重新拉取 Cloudflare D1 最新数据...');
     try {
-      if (writeQueueRef.current?.hasPending() || todayNotesDebounceRef.current) throw new Error('还有改动未保存，请先重试保存再同步');
+      if (writeQueueRef.current?.hasPending() || todayNotesDebounceRef.current || babyTodayNotesDebounceRef.current) throw new Error('还有改动未保存，请先重试保存再同步');
       await loadAllData(syncCode);
       pushLog('success', '✅ 数据同步完成。所有状态已更新为服务端最新值。');
     } catch (e: any) {
@@ -1267,7 +1277,7 @@ export default function App() {
                           className="w-full text-left p-1.5 hover:bg-[#fafaf3] rounded flex items-center gap-1.5 text-[#555047]">
                           <Key size={12} />复制同步码
                         </button>
-                        <button onClick={() => { if (writeQueueRef.current?.hasPending() || todayNotesDebounceRef.current) { alert('还有未保存的改动，请先重试保存。'); return; } localStorage.removeItem('techo_sync_code'); setSyncCode(''); setIsProfileOpen(false); }}
+                        <button onClick={() => { if (writeQueueRef.current?.hasPending() || todayNotesDebounceRef.current || babyTodayNotesDebounceRef.current) { alert('还有未保存的改动，请先重试保存。'); return; } localStorage.removeItem('techo_sync_code'); setSyncCode(''); setIsProfileOpen(false); }}
                           className="w-full text-left p-1.5 hover:bg-rose-50 text-red-600 rounded flex items-center gap-1.5">
                           ✕ 退出登录
                         </button>
